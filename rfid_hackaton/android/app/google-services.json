@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "964587985452",
+    "project_id": "graphical-bus-348706",
+    "storage_bucket": "graphical-bus-348706.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:964587985452:android:d3038e42fde648257a4f89",
+        "android_client_info": {
+          "package_name": "com.rfid.sm.rfid_hackaton"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "964587985452-udiad96qt2d1e1nmhur4ci4cp0lh4iip.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCP1F-YeN87Gh59UAA9em1EIJig9WU1OA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "964587985452-udiad96qt2d1e1nmhur4ci4cp0lh4iip.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

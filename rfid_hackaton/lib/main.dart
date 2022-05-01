@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rfid_hackaton/views/map_view.dart';
 
 void main() {
   runApp(const MyApp());
@@ -101,6 +102,16 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headline4,
+            ),
+            /* Button that when clicked opens map view */
+            RaisedButton(
+              child: Text('Open Map View'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MapView(title: 'Choose your destination',)),
+                );
+              },
             ),
           ],
         ),
