@@ -25,11 +25,12 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home:
+      // new HomeScreen(),
+      const MyHomePage(title: 'Mi App'),
     );
   }
 }
-
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
 
@@ -71,6 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
+
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
@@ -115,6 +117,39 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ],
         ),
+      ),
+      drawer: Drawer(
+          child: new ListView(
+            children: <Widget>[
+              UserAccountsDrawerHeader(
+                accountName: Text("Prueba Prueba"),
+                accountEmail: Text("email@prueba.es"),
+                currentAccountPicture: CircleAvatar(backgroundColor: Colors.white),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                ),
+              ),
+              ListTile(
+                title: Text("Home"),
+                leading: Icon(Icons.home),
+                onTap: (){
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MapView(title: 'Choose your destination',)),
+                  );
+                },
+              ),
+              ListTile(
+                title: Text("Profile"),
+                leading: Icon(Icons.account_circle),
+                onTap: (){},
+              ),
+              ListTile(
+                title: Text("Version App 0.0.1"),
+                onTap: (){},
+              ),
+            ],
+          )
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
