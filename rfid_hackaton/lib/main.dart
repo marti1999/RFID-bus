@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
+import 'package:rfid_hackaton/views/profile_view.dart';
 
 void main() {
   runApp(const MyApp());
