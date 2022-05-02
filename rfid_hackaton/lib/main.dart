@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
+import 'package:rfid_hackaton/views/profile_view.dart';
 
 void main() {
   runApp(const MyApp());
@@ -142,7 +143,12 @@ class _MyHomePageState extends State<MyHomePage> {
               ListTile(
                 title: Text("Profile"),
                 leading: Icon(Icons.account_circle),
-                onTap: (){},
+                onTap: (){
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const profileView(),),
+                  );
+                },
               ),
               ListTile(
                 title: Text("Version App 0.0.1"),
