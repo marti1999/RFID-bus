@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
+import 'package:rfid_hackaton/services/database.dart';
 
 void main() {
   runApp(const MyApp());
@@ -108,6 +109,13 @@ class _MyHomePageState extends State<MyHomePage> {
               onTap: (){},
             ),
             ListTile(
+              title: Text("add user test"),
+              leading: Icon(Icons.create_new_folder),
+              onTap: (){
+                addUserTest('15', 'marti', 34);
+              },
+            ),
+            ListTile(
               title: Text("Version App 0.0.1"),
               onTap: (){},
             ),
@@ -115,4 +123,8 @@ class _MyHomePageState extends State<MyHomePage> {
         )
     );
   }
+}
+
+Future addUserTest(String id, String name, int age) async {
+  await DatabaseService(userID: id).updateUserData(name, age);
 }
