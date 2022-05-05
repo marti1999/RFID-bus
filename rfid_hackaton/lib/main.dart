@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
   // a login o a la pantalla principal
   Widget build(BuildContext context) {
     return StreamProvider<MyUser?>.value(
+      catchError: (_,__) {},
       initialData: null,
       value: AuthService().user,
       child:MaterialApp(

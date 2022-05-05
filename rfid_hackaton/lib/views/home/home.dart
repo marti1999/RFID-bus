@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:rfid_hackaton/services/auth.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';
@@ -25,6 +26,8 @@ class Home extends StatefulWidget {
 
 class _MyHomePageState extends State<Home> {
   int _counter = 0;
+
+  final AuthService _auth = AuthService();
 
   void _incrementCounter() {
     setState(() {
@@ -89,8 +92,15 @@ class _MyHomePageState extends State<Home> {
               },
             ),
             ListTile(
+              title: Text("log out"),
+                leading: Icon(Icons.logout),
+              onTap: () async {
+                await _auth.signOut();
+              },
+            ),
+            ListTile(
               title: Text("Version App 0.0.1"),
-              onTap: (){},
+
             ),
           ],
         )

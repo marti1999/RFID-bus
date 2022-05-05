@@ -12,6 +12,11 @@ class Wrapper extends StatelessWidget {
 
     final user = Provider.of<MyUser?>(context);
     print(user);
+    if (user == null){
+      return Authenticate();
+    } else {
+      return Home(title: 'RFID Bus Tracker');
+    }
     // return Home o Authenticate, depenent si està logejat
 
     return Authenticate();
