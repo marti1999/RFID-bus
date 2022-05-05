@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rfid_hackaton/views/authenticate/authenticate.dart';
 import 'package:rfid_hackaton/views/home/home.dart';
 
 class Wrapper extends StatelessWidget {
@@ -9,6 +10,7 @@ class Wrapper extends StatelessWidget {
 
     // return Home o Authenticate, depenent si està logejat
 
-    return Home(title: 'RFID Bus Tracker') ;
+    return Authenticate();
+    // return Home(title: 'RFID Bus Tracker') ;
   }
 }
