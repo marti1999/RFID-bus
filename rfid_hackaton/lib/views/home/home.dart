@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/services/auth.dart';
-import 'package:rfid_hackaton/views/home/feedback_form.dart';
+import 'package:rfid_hackaton/views/feedback/feedback_form.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';

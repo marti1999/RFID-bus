@@ -3,16 +3,86 @@ import 'package:flutter/material.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:rfid_hackaton/services/database.dart';
+import 'package:flutter_svg/svg.dart';
 
+import 'home_button.dart';
 
-class feedbackForm extends StatelessWidget {
-  feedbackForm({Key? key}) : super(key: key);
+class feedbackForm extends StatefulWidget {
+  const feedbackForm({Key? key}) : super(key: key);
 
-  // guarda l'estat actual del formulari
+  @override
+  State<feedbackForm> createState() => _feedbackFormState();
+}
+
+class _feedbackFormState extends State<feedbackForm> {
+  int _counter = 0;
+  bool feedback_sent = false;
   final GlobalKey<FormBuilderState> formKey = GlobalKey<FormBuilderState>();
 
   @override
   Widget build(BuildContext context) {
+    if (feedback_sent) {
+      double screenWidth = MediaQuery.of(context).size.width;
+      double screenHeight = MediaQuery.of(context).size.height;
+      return Scaffold(
+          body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              height: 170,
+              padding: EdgeInsets.all(35),
+              decoration: const BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                "assets/images/card.png",
+                fit: BoxFit.contain,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.1),
+            const Text(
+              "Thank You!",
+              style: TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.w600,
+                fontSize: 36,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.01),
+            const Text(
+              "Feedback sent Successfully",
+              style: TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.w400,
+                fontSize: 17,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.05),
+            const Text(
+              "Cclick here to return to home page",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black54,
+                fontWeight: FontWeight.w400,
+                fontSize: 14,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.06),
+            Flexible(
+              child: HomeButton(
+                title: 'Home',
+                onTap: () {
+                  print('clicat per tornar a Home');
+                },
+              ),
+            ),
+          ],
+        ),
+      ));
+    }
     return ListView(
       padding: const EdgeInsets.all(12),
       children: <Widget>[
@@ -26,20 +96,17 @@ class feedbackForm extends StatelessWidget {
                   FormBuilderTextField(
                     name: 'name',
                     decoration: const InputDecoration(
-                      labelText:
-                      'Your name',
+                      labelText: 'Your name',
                     ),
                     validator: FormBuilderValidators.compose([
                       FormBuilderValidators.required(),
                       FormBuilderValidators.max(30),
                     ]),
                   ),
-
                   FormBuilderTextField(
                     name: 'email',
                     decoration: const InputDecoration(
-                      labelText:
-                      'Your email',
+                      labelText: 'Your email',
                     ),
                     validator: FormBuilderValidators.compose([
                       FormBuilderValidators.required(),
@@ -67,8 +134,7 @@ class feedbackForm extends StatelessWidget {
                     name: 'message',
                     maxLines: 5,
                     decoration: const InputDecoration(
-                      labelText:
-                          'Type your message here',
+                      labelText: 'Type your message here',
                     ),
                     // valueTransformer: (text) => num.tryParse(text),
                     validator: FormBuilderValidators.compose([
@@ -97,7 +163,7 @@ class feedbackForm extends StatelessWidget {
                     validator: FormBuilderValidators.equal(
                       true,
                       errorText:
-                      'You must accept terms and conditions to continue',
+                          'You must accept terms and conditions to continue',
                     ),
                   ),
                 ],
@@ -117,6 +183,10 @@ class feedbackForm extends StatelessWidget {
                         formKey.currentState!.save();
                         print(formKey.currentState?.value);
                         addFeedback(formKey);
+                        setState(() {
+                          feedback_sent = true;
+                        });
+
                       } else {
                         print("validation failed");
                       }
@@ -145,7 +215,7 @@ class feedbackForm extends StatelessWidget {
   }
 }
 
-Future addFeedback(GlobalKey<FormBuilderState> formKey) async{
+Future addFeedback(GlobalKey<FormBuilderState> formKey) async {
   // print(formKey.currentState.value);
   // TODO posar el user ID
   await DatabaseService(userID: '1').updateFeedback(formKey);
