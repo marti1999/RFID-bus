@@ -5,6 +5,8 @@ import 'package:rfid_hackaton/views/map_view.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';
 
+import '../company/realtime_dashboard.dart';
+
 
 class Home extends StatefulWidget {
   const Home({Key? key, required this.title}) : super(key: key);
@@ -83,6 +85,13 @@ class _MyHomePageState extends State<Home> {
               title: Text("Profile"),
               leading: Icon(Icons.account_circle),
               onTap: (){},
+            ),
+            ListTile(
+              title: Text("Realtime (IoT per buseros)"),
+              leading: Icon(Icons.timeline),
+              onTap: (){
+                Navigator.push(context, MaterialPageRoute(builder: (context) => RealtimeDashboard(title: '',)));
+              },
             ),
             ListTile(
               title: Text("add user test"),
