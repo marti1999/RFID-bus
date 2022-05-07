@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:rfid_hackaton/services/database.dart';
-import 'package:flutter_svg/svg.dart';
 
 import 'home_button.dart';
 

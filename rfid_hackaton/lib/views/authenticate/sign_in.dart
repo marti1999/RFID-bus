@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/services/auth.dart';
-import 'package:rfid_hackaton/views/authenticate/authenticate.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({Key? key}) : super(key: key);
@@ -13,6 +12,10 @@ class _SignInState extends State<SignIn> {
 
   final AuthService _auth = AuthService();
 
+  //text field state
+  String email = '';
+  String passwd = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,18 +27,44 @@ class _SignInState extends State<SignIn> {
       ),
       body: Container(
         padding: EdgeInsets.symmetric(vertical: 20, horizontal: 50),
-        child: ElevatedButton(
-          child: Text('Sign in anonymous'),
-          onPressed: () async{
-            dynamic result = await _auth.signInAnon();
-            if (result == null){
-              print('error signing in');
-            } else {
-              // print('signed in');
-              // print(result.uid);
-            }
-          },
-        ),
+        child: Form(
+          child:Column(
+            children: <Widget>[
+              SizedBox(height: 20.0,),
+              TextFormField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Email'
+                ),
+                onChanged: (val){
+                  setState(() => email = val);
+                },
+              ),
+              SizedBox(height: 20.0,),
+              TextFormField(
+                obscureText: true,
+                decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Password'
+                ),
+                onChanged: (val){
+                  setState(() => passwd = val);
+                },
+              ),
+              SizedBox(height: 20.0,),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.pink[400],
+                ),
+                child: const Text('Sign in'),
+                onPressed: () async {
+                  print(email);
+                  print(passwd);
+                },
+              ),
+            ],
+          )
+        )
       )
     );
   }
