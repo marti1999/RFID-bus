@@ -2,14 +2,10 @@ import 'package:firebase_database/firebase_database.dart';
 
 class RealDatabaseService {
 
-  final String userID;
+  final DatabaseReference _messagesRef = FirebaseDatabase(databaseURL: 'https://graphical-bus-348706-default-rtdb.europe-west1.firebasedatabase.app/').reference().child('buses');
 
-  RealDatabaseService({required this.userID});
-
-  final DatabaseReference _messagesRef = FirebaseDatabase.instance.reference()
-      .child('buses');
-
-  Query getBusesData() {
+  Query getBusesData()
+  {
     return _messagesRef;
   }
 
@@ -18,4 +14,6 @@ class RealDatabaseService {
       'text': message,
     });
   }
+
+
 }

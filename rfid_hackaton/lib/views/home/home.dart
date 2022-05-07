@@ -87,13 +87,6 @@ class _MyHomePageState extends State<Home> {
               onTap: (){},
             ),
             ListTile(
-              title: Text("Realtime (IoT per buseros)"),
-              leading: Icon(Icons.timeline),
-              onTap: (){
-                Navigator.push(context, MaterialPageRoute(builder: (context) => RealtimeDashboard(title: '',)));
-              },
-            ),
-            ListTile(
               title: Text("add user test"),
               leading: Icon(Icons.create_new_folder),
               onTap: (){

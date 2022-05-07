@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
@@ -7,7 +8,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rfid_hackaton/services/gps_service.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
+import '../models/bus_real_data.dart';
 import '../services/map_service.dart';
+import '../services/realtime_database.dart';
 import 'bus_view.dart';
 
 class MapView extends StatefulWidget {
@@ -20,6 +23,8 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
+
+
   final Completer<GoogleMapController> _controller = Completer();
 
   Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
@@ -176,11 +181,12 @@ class _MapViewState extends State<MapView> {
           List<Widget> children;
           if (snapshot.hasData) {
               children = <Widget>[];
-              if (showBuses){
+              /*if (showBuses){
+
                 children.add(
-                    BusView(polylineCoordinates: polylineCoordinates, destination: _destinationLatLng, origin: _locationLatLng, polylines: polylines, markers: markers),
+
                 );
-              }else{
+              }else{*/
                 children.add(
                     SlidingUpPanel(
                       renderPanelSheet: false,
@@ -199,7 +205,7 @@ class _MapViewState extends State<MapView> {
                     )
                 );
 
-              }
+              //}
           } else if (snapshot.hasError) {
             children = <Widget>[
               const Icon(
@@ -375,9 +381,10 @@ class _MapViewState extends State<MapView> {
                 onPressed: () {
                   createPolyLine(polylineCoordinates);
                   MapService().zoomToPolyline(_controller, polylineCoordinates);
-                  setState(() {
-                    showBuses = true;
-                  });
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => BusView(title: 'Bus Routes',polylineCoordinates: polylineCoordinates, destination: _destinationLatLng, origin: _locationLatLng, polylines: polylines, markers: markers,),));
+                  // setState(() {
+                  //   showBuses = true;
+                  // });
                 },
                 child: const Text('Leets goo'),
                 focusNode: sendButtonFocusNode,

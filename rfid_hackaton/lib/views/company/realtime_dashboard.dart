@@ -1,6 +1,12 @@
+import 'dart:convert';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:rfid_hackaton/models/bus_real_data.dart';
 import 'package:rfid_hackaton/services/auth.dart';
+import 'package:rfid_hackaton/services/gps_service.dart';
+import 'package:rfid_hackaton/views/bus_view.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';
@@ -27,34 +33,12 @@ class RealtimeDashboard extends StatefulWidget {
 }
 
 class _RealtimeDashboardState extends State<RealtimeDashboard> {
-  late RealDatabaseService _dbref;
-  String databasejson = "";
-  int countvalue =0;
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    _dbref
-        .getBusesData()
-        .onValue
-        .listen((event) {
-      setState(() {
-        databasejson = event.snapshot.value.toString();
-        print(databasejson);
-        countvalue = countvalue + 1;
-      });
-    }
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text("Counter Value: $countvalue"),
-      ),
-    );
+    return BusView(title: widget.title,);
   }
+
+
 
 }
