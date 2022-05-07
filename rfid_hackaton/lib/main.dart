@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:rfid_hackaton/models/my_user.dart';
 import 'package:rfid_hackaton/services/auth.dart';
@@ -12,7 +13,14 @@ import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+        apiKey: "XXXXXXX",
+        appId: "XXXX",
+        messagingSenderId: "XXX",
+        projectId: "XXXX"
+    ),
+  );
   runApp(const MyApp());
 }
 
@@ -34,6 +42,9 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
+        localizationsDelegates: [
+          FormBuilderLocalizations.delegate,
+        ],
         darkTheme: ThemeData.dark(),
         home: Wrapper(),
       ),
