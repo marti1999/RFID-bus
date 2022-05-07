@@ -2,8 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:rfid_hackaton/services/gps_service.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
+
+import '../services/map_service.dart';
+import 'bus_view.dart';
 
 class MapView extends StatefulWidget {
   const MapView({Key? key, required this.title}) : super(key: key);
@@ -18,11 +23,6 @@ class _MapViewState extends State<MapView> {
   final Completer<GoogleMapController> _controller = Completer();
 
   Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
-
-  static const CameraPosition _kGooglePlex = CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 14.4746,
-  );
   final PanelController _pc = PanelController();
 
   Map<PolylineId, Polyline> polylines = <PolylineId, Polyline>{};
@@ -30,22 +30,13 @@ class _MapViewState extends State<MapView> {
 
   List<LatLng> polylineCoordinates = [];
 
-  void zoomToPolyline() {
-    const double polylineWidth = 10;
+  String _location = 'Unknown';
+  String _destination = 'Unknown';
 
-    const double edgePadding = polylineWidth * .15;
+  LatLng _locationLatLng = const LatLng(0, 0);
+  LatLng _destinationLatLng = const LatLng(0, 0);
 
-    LatLngBounds bounds = LatLngBounds(
-      southwest: polylineCoordinates.first,
-      northeast: polylineCoordinates.last
-    );
-
-    CameraUpdate cu = CameraUpdate.newLatLngBounds(bounds, edgePadding);
-
-    _controller.future.then((GoogleMapController controller) {
-      controller.animateCamera(cu);
-    });
-  }
+  bool showBuses = false;
 
   void createPolyLine(List<LatLng> points) {
     final int polylineCount = polylines.length;
@@ -96,7 +87,7 @@ class _MapViewState extends State<MapView> {
   }
 
   /// It hides the panel for some seconds so the user can see the map
-  /// and then it shows the panel again
+  /// and then it As the panel again
 
   Future<void> showMarkerAnimation(GoogleMapController controller, String query) async {
     _pc.close();
@@ -128,6 +119,12 @@ class _MapViewState extends State<MapView> {
       List<Location> locations = await locationFromAddress(query);
       Location location = locations.first;
 
+      if (polylineCoordinates.isNotEmpty && polylineCoordinates.length > 1) {
+        _destinationLatLng = LatLng(location.latitude, location.longitude);
+      }else{
+        _locationLatLng = LatLng(location.latitude, location.longitude);
+      }
+
       polylineCoordinates.add(LatLng(location.latitude, location.longitude));
 
       generateMarker(query, query, location.latitude, location.longitude);
@@ -138,12 +135,22 @@ class _MapViewState extends State<MapView> {
         showMarkerAnimation(controller, query));
 
     } catch (e) {
-      showAlertDialog(context,  'No location found for $query');
+      MapService().showAlertDialog(context,  'No location found for $query');
     }
   }
 
-  String _location = "";
-  String _destination = "";
+  Future<void> updateMapLocation() async {
+    final GoogleMapController controller = await _controller.future;
+
+    try {
+      GpsService().determinePosition().then((value) => {
+        controller.animateCamera(CameraUpdate.newLatLngZoom(LatLng(value.latitude, value.longitude), 14))
+      });
+
+    } catch (e) {
+      MapService().showAlertDialog(context,  'No location found for');
+    }
+  }
 
   double circularRadius = 10;
 
@@ -154,27 +161,104 @@ class _MapViewState extends State<MapView> {
       topRight: Radius.circular(circularRadius),
     );
 
-    return Scaffold(
-      body: SlidingUpPanel(
-        renderPanelSheet: false,
-        collapsed: buildCollapsed(radius, isExpanded: false),
-        panel: buildBottomSheet(radius),
-        body: buildGoogleMaps(context),
-        borderRadius:  radius,
-        controller: _pc,
-          maxHeight: MediaQuery.of(context).size.height * 0.55,
-        onPanelSlide: (double pos) {
-          setState(() {
-            circularRadius = 10 + (pos * 10);
-          });
+    GpsService().getLocationAsAddress().then((value) =>
+      setState(() {
+        _location = value;
+      })
+    );
+
+    return DefaultTextStyle(
+      style: Theme.of(context).textTheme.headline2!,
+      textAlign: TextAlign.center,
+      child: FutureBuilder<Position>(
+        future: GpsService().determinePosition(), // a previously-obtained Future<String> or null
+        builder: (BuildContext context, AsyncSnapshot<Position> snapshot) {
+          List<Widget> children;
+          if (snapshot.hasData) {
+              children = <Widget>[];
+              if (showBuses){
+                children.add(
+                    BusView(polylineCoordinates: polylineCoordinates, destination: _destinationLatLng, origin: _locationLatLng, polylines: polylines, markers: markers),
+                );
+              }else{
+                children.add(
+                    SlidingUpPanel(
+                      renderPanelSheet: false,
+                      collapsed: buildCollapsed(radius, isExpanded: false),
+                      panel: buildBottomSheet(radius),
+                      body: buildGoogleMaps(context, snapshot.data),
+                      borderRadius:  radius,
+                      controller: _pc,
+                      maxHeight: MediaQuery.of(context).size.height * 0.55,
+                      onPanelSlide: (double pos) {
+                        setState(() {
+                          circularRadius = 10 + (pos * 10);
+                        }
+                        );
+                      },
+                    )
+                );
+
+              }
+          } else if (snapshot.hasError) {
+            children = <Widget>[
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 60,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Text('Error: ${snapshot.error}'),
+              )
+            ];
+          } else {
+            children = const <Widget>[
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: CircularProgressIndicator(),
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Text('Awaiting result...'),
+              )
+            ];
+          }
+          return Scaffold(
+            body: Center(
+              child: Stack(
+              children: children,
+            ),
+            ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () {
+                updateMapLocation();
+              },
+              child: const Icon(Icons.my_location),
+            ),
+          );
         },
       ),
     );
   }
 
+
   /// Builds the google maps widget
-  Widget buildGoogleMaps(BuildContext context) {
+  Widget buildGoogleMaps(BuildContext context , Position? position) {
+    LatLng _currentPosition = const LatLng(0, 0);
+
+    if (position != null) {
+      _currentPosition = LatLng(position.latitude, position.longitude);
+    }
+
+    CameraPosition _kGooglePlex = CameraPosition(
+      target: _currentPosition,
+      zoom: 14.4746,
+    );
+
     return GoogleMap(
+      zoomControlsEnabled: true,
         mapType: MapType.hybrid,
         initialCameraPosition: _kGooglePlex,
         markers: Set<Marker>.of(markers.values),
@@ -183,37 +267,10 @@ class _MapViewState extends State<MapView> {
           _controller.complete(controller);
         },
         onTap: (LatLng latLng) {
-          showAlertDialog(context, latLng.toString());
+          MapService().showAlertDialog(context, latLng.toString());
         },
     );
   }
-
-  showAlertDialog(BuildContext context , String message) {
-
-    // set up the button
-    Widget okButton = TextButton(
-      child: const Text("OK"),
-      onPressed: () { Navigator.pop(context); },
-    );
-
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: const Text("My title"),
-      content: Text(message),
-      actions: [
-        okButton,
-      ],
-    );
-
-    // show the dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
-    );
-  }
-
 
   Widget buildCollapsed(BorderRadiusGeometry radius, { bool isExpanded = false }) {
     return Container(
@@ -291,7 +348,7 @@ class _MapViewState extends State<MapView> {
                       saveLocation(value, true);
                       FocusScope.of(context).requestFocus(textSecondFocusNode);
                     },
-                    //controller: TextEditingController(),
+                    controller: TextEditingController(text: _location),
                     decoration: buildInputDecoration(),
               ),
               const SizedBox(height: 10,),
@@ -317,7 +374,10 @@ class _MapViewState extends State<MapView> {
               ElevatedButton(
                 onPressed: () {
                   createPolyLine(polylineCoordinates);
-                  zoomToPolyline();
+                  MapService().zoomToPolyline(_controller, polylineCoordinates);
+                  setState(() {
+                    showBuses = true;
+                  });
                 },
                 child: const Text('Leets goo'),
                 focusNode: sendButtonFocusNode,
@@ -337,6 +397,7 @@ class _MapViewState extends State<MapView> {
       setState(() {
         if (isDestination) {
           _destination = location;
+
         } else {
           _location = location;
         }

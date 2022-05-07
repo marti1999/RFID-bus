@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/services/auth.dart';
+import 'package:rfid_hackaton/views/feedback/feedback_form.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';
@@ -8,16 +9,6 @@ import 'package:rfid_hackaton/services/database.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key, required this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -26,36 +17,27 @@ class Home extends StatefulWidget {
 
 class _MyHomePageState extends State<Home> {
   int _counter = 0;
+  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm()];
+  int body_widget_index = 0;
 
   final AuthService _auth = AuthService();
 
   void _incrementCounter() {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
       _counter++;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+
     return Scaffold(
 
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
+
         title: Text(widget.title),
       ),
-      body: const MapView(title: 'New Route',),
+      body: bodyWidgets[body_widget_index],
       drawer: buildDrawer(context),
     );
   }
@@ -76,7 +58,10 @@ class _MyHomePageState extends State<Home> {
               title: Text("Home"),
               leading: Icon(Icons.home),
               onTap: (){
-                Navigator.pop(context);
+                setState(() {
+                  body_widget_index = 0;
+                  Navigator.pop(context);
+                });
               },
             ),
             ListTile(
@@ -89,6 +74,16 @@ class _MyHomePageState extends State<Home> {
               leading: Icon(Icons.create_new_folder),
               onTap: (){
                 addUserTest('15', 'marti', 34);
+              },
+            ),
+            ListTile(
+              title: Text("Feedback form"),
+              leading: Icon(Icons.feedback_outlined),
+              onTap: (){
+                setState(() {
+                  body_widget_index = 1;
+                  Navigator.pop(context);
+                });
               },
             ),
             ListTile(
