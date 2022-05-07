@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/views/authenticate/sign_in.dart';
 import 'package:rfid_hackaton/services/auth.dart';
 
+import '../company/realtime_dashboard.dart';
+
 class Register extends StatefulWidget {
 
   @override
@@ -60,6 +62,14 @@ class _RegisterState extends State<Register> {
                     onPressed: () async {
                       print(email);
                       print(passwd);
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    child: Text('Realtime (IoT per buseros)'),
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const RealtimeDashboard(title: 'IoT Bus Company',)));
+
                     },
                   ),
                 ],
