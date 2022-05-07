@@ -6,6 +6,8 @@ import 'package:rfid_hackaton/views/map_view.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';
 
+import '../company/realtime_dashboard.dart';
+
 
 class Home extends StatefulWidget {
   const Home({Key? key, required this.title}) : super(key: key);

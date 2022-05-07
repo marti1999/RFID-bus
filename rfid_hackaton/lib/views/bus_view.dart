@@ -1,37 +1,51 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:rfid_hackaton/services/bus_rt_data.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
+import '../models/bus_real_data.dart';
 import '../services/gps_service.dart';
 import '../services/map_service.dart';
+import '../services/realtime_database.dart';
 
 class BusView extends StatefulWidget {
-  const BusView({Key? key, required this.origin, required this.destination, required this.polylines, required this.polylineCoordinates, required this.markers}) : super(key: key);
+  const BusView({Key? key, required this.title, this.origin, this.destination, this.polylines, this.polylineCoordinates, this.markers}) : super(key: key);
 
-  final LatLng origin;
-  final LatLng destination;
-  final List<LatLng> polylineCoordinates;
-  final Map<PolylineId, Polyline> polylines;
-  final Map<MarkerId, Marker> markers;
+  final String title;
+  final LatLng? origin;
+  final LatLng? destination;
+  final List<LatLng>? polylineCoordinates;
+  final Map<PolylineId, Polyline>? polylines;
+  final Map<MarkerId, Marker>? markers;
 
   @override
   State<BusView> createState() => _BusViewState();
 }
 
 class _BusViewState extends State<BusView> {
+  late RealDatabaseService _dbref;
+  Map<int, BusRtData> busRealTimeData = <int, BusRtData>{};
+
   final Completer<GoogleMapController> _controller = Completer();
 
   final PanelController _pc = PanelController();
 
   int _polylineIdCounter = 0;
 
-  bool busesSpawned = false;
+  int _currentBusIndex = 0;
 
+  Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
+  Map<PolylineId, Polyline> polylines = <PolylineId, Polyline>{};
+
+  bool busesSpawned = false;
+  bool  _isMapCreated = false;
+  bool _followBus = false;
+
+  String _currentBusText = "";
   void createPolyLine(List<LatLng> points) {
-    final int polylineCount = widget.polylines.length;
+    final int polylineCount = polylines.length;
 
     final String polylineIdVal = 'polyline_id_$_polylineIdCounter';
 
@@ -47,28 +61,30 @@ class _BusViewState extends State<BusView> {
       points: points,
     );
 
-    if (!widget.polylines.containsKey(polylineId)) {
+    if (polylines.containsKey(polylineId)) {
       setState(() {
-        widget.polylines[polylineId] = polyline;
+        polylines[polylineId] = polyline;
       });
     }
   }
 
+  late BitmapDescriptor myIcon;
 
   /// This generates a marker for the map.
-  Future<void> generateBusMarker(String busId, int busPeopleNumber, LatLng position) async {
+  Future<void> generateBusMarker(String busId, int busPeopleNumber, double busLatitude, double busLongitude) async {
+    LatLng busPosition = LatLng(busLatitude, busLongitude);
+
     final MarkerId markerId = MarkerId(busId);
 
     BitmapDescriptor markerbitmap = await BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(size: Size(12, 12)),
+      const ImageConfiguration(),
       "assets/bus_icon.png",
     );
-
 
     // creating a new MARKER
     final Marker marker = Marker(
       markerId: markerId,
-      position: position,
+      position: busPosition,
       infoWindow: InfoWindow(
         title: 'Bus $busId',
         snippet: '$busPeopleNumber people',
@@ -80,8 +96,7 @@ class _BusViewState extends State<BusView> {
     );
 
     setState(() {
-      // adding a new marker to map
-      widget.markers[markerId] = marker;
+      markers[markerId] = marker;
     });
   }
 
@@ -97,7 +112,7 @@ class _BusViewState extends State<BusView> {
     // wait for 1 second
     await Future.delayed(const Duration(seconds: 3));
     // then move to the marker
-    LatLng latLng = widget.markers[MarkerId(query)]!.position;
+    LatLng latLng = widget.markers![MarkerId(query)]!.position;
 
     LatLng  offsetLoc = LatLng(latLng.latitude - 0.010, latLng.longitude);
 
@@ -111,13 +126,23 @@ class _BusViewState extends State<BusView> {
   /// It will then call the generateMarker function to add a marker to the map.
   /// Finally, it will call the showMarkerAnimation function to animate the camera to the marker.
   /// This function is called when the user writes a query.
-  Future<void> moveToPossibleBusLocation(LatLng location) async {
+  Future<void> moveToPossibleBusLocation(int  busId) async {
+
+    // get the bus location
+    BusRtData busRtData = busRealTimeData[busId]!;
+
+    LatLng busPosition = LatLng(busRtData.busLatitude, busRtData.busLongitude);
+
+    _currentBusText = busPosition.toString();
+    // get the bus location
+
+
     final GoogleMapController controller = await _controller.future;
 
     try {
-      widget.polylineCoordinates.add(location);
+      //widget.polylineCoordinates!.add(busPosition);
 
-      final cameraUpdate = CameraUpdate.newLatLngZoom(location, 14);
+      final cameraUpdate = CameraUpdate.newLatLngZoom(busPosition, 6.4746);
 
       controller.animateCamera(cameraUpdate);
 
@@ -141,6 +166,48 @@ class _BusViewState extends State<BusView> {
 
   double circularRadius = 10;
 
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    if(widget.markers != null){
+      widget.markers!.forEach((key, value) {
+        markers[key] = value;
+      });
+    }
+
+    if (widget.polylines != null) {
+      widget.polylines!.forEach((key, value) {
+        polylines[key] = value;
+      });
+    }
+
+    _dbref = RealDatabaseService();
+
+    _dbref
+        .getBusesData()
+        .onValue
+        .listen((event) {
+      setState(() {
+        dynamic buses = event.snapshot.value;
+
+        if (buses != null) {
+          int i = 0;
+          for (var bus in buses.values) {
+            // convert to json
+            var busJson = json.encode(bus);
+            print(busJson);
+            final parsedJson = jsonDecode(busJson);
+            BusRtData busData = BusRtData.fromJson(parsedJson);
+            busRealTimeData[i] = busData;
+            i++;
+          }
+        }
+
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,61 +215,102 @@ class _BusViewState extends State<BusView> {
       topLeft: Radius.circular(circularRadius),
       topRight: Radius.circular(circularRadius),
     );
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: ()=>{
+              setState(() {
+                _followBus = !_followBus;
+              }),
+            },
+            child: Text(_followBus ? 'Unfollow Bus' : 'Follow Bus'),
+          ),
+        ],
+      ),
+      body: SlidingUpPanel(
+        renderPanelSheet: false,
+        collapsed: buildCollapsed(radius, isExpanded: false),
+        panel: buildBottomSheet(radius),
+        body: buildGoogleMaps(context, widget.destination, widget.origin),
+        borderRadius:  radius,
+        controller: _pc,
+        maxHeight: MediaQuery.of(context).size.height * 0.45,
+      ),
+    );
 
-    return SlidingUpPanel(
-      renderPanelSheet: false,
-      collapsed: buildCollapsed(radius, isExpanded: false),
-      panel: buildBottomSheet(radius),
-      body: buildGoogleMaps(context, widget.destination, widget.origin),
-      borderRadius:  radius,
-      controller: _pc,
-      maxHeight: MediaQuery.of(context).size.height * 0.55,
-      onPanelSlide: (double pos) {
-        setState(() {
-          circularRadius = 10 + (pos * 10);
-        });
-      },
+  }
+
+  Widget buildBody(BuildContext context , LatLng? destination, LatLng? origin) {
+    return Stack(
+      children:
+      [
+
+        buildGoogleMaps(context, destination, origin),
+        Positioned(
+          top: 0,
+          child:
+        Container(
+            height: 50,
+            color: Colors.white,
+            child: Center(
+                child: Text(
+                  _currentBusText,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+            )
+        ),
+        ),
+      ],
     );
   }
 
+    /// Builds the google maps widget
+  Widget buildGoogleMaps(BuildContext context , LatLng? destination, LatLng? origin) {
 
-  /// Builds the google maps widget
-  Widget buildGoogleMaps(BuildContext context , LatLng destination, LatLng origin) {
     CameraPosition cameraPosition = CameraPosition(
-      target: origin,
-      zoom: 14,
+      target: origin ?? const LatLng(37.42796133580664, -122.085749655962),
+      zoom: 14.4746,
     );
 
-    if (busesSpawned == false) {
-      List<BusRtData> busRtData = BusRealtimeData().generateBusRealtimeData(
-          widget.origin, widget.destination);
-
-      for (var i = 0; i < busRtData.length; i++) {
-        BusRtData busData = busRtData[i];
+    if (_isMapCreated) {
+      for (var busData in busRealTimeData.values) {
         generateBusMarker(
-            busData.busId, busData.busPeopleNumber, busData.busLocation);
+            busData.busId, busData.busPeopleNumber, busData.busLatitude,
+            busData.busLongitude);
       }
 
-      moveToPossibleBusLocation(busRtData.last.busLocation);
-
-      busesSpawned = true;
+      if (_followBus) {
+        moveToPossibleBusLocation(_currentBusIndex);
+      }
     }
+
+
+
+
     return GoogleMap(
       zoomControlsEnabled: true,
-      mapType: MapType.hybrid,
+      mapType: MapType.normal,
       initialCameraPosition: cameraPosition,
-      markers: Set<Marker>.of(widget.markers.values),
-      polylines: Set<Polyline>.of(widget.polylines.values),
+      markers: Set<Marker>.of(markers.values),
+      polylines: Set<Polyline>.of(polylines.values),
       onMapCreated: (GoogleMapController controller) {
         _controller.complete(controller);
+        setState(() {
+          _isMapCreated = true;
+          moveToPossibleBusLocation(0);
+        });
       },
       onTap: (LatLng latLng) {
         MapService().showAlertDialog(context, latLng.toString());
       },
     );
   }
-
-
 
 
   Widget buildCollapsed(BorderRadiusGeometry radius, { bool isExpanded = false }) {
@@ -227,7 +335,7 @@ class _BusViewState extends State<BusView> {
           Padding(
             padding:  EdgeInsets.only(left: 16.0, right: 16.0, bottom: (!isExpanded) ?  0.0 : 16.0),
             child: const Text(
-              'Choose the best bus route',
+              'Your Buses',
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
@@ -240,10 +348,6 @@ class _BusViewState extends State<BusView> {
   }
 
   Widget buildBottomSheet(BorderRadiusGeometry radius) {
-
-    FocusNode textSecondFocusNode = new FocusNode();
-    FocusNode sendButtonFocusNode = new FocusNode();
-
     return Column(
       children: <Widget>[
         buildCollapsed(radius, isExpanded: true),
@@ -265,15 +369,17 @@ class _BusViewState extends State<BusView> {
           margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
           child:
           Column(
-            children: const <Widget>[
-              SizedBox(height: 10,),
-              Text(
-                'Choose a bus route',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children:  <Widget>[
+              const SizedBox(height: 10.0),
+
+              if (busRealTimeData.isNotEmpty)
+                _itemRow(context),
+              if (busRealTimeData.isEmpty)
+                const Center(
+                  child: Text('No buses found'),
                 ),
-              ),
+
 
             ],
           ),
@@ -283,24 +389,87 @@ class _BusViewState extends State<BusView> {
 
   }
 
-  InputDecoration  buildInputDecoration(){
-    return InputDecoration(
-      hintText: "Enter your Name",
-      prefixIcon: const Icon(Icons.location_city),
-      contentPadding: const EdgeInsets.symmetric(vertical: 10,horizontal: 10),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(circularRadius),
-        borderSide: const BorderSide(color: Colors.grey, width: 2),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(circularRadius),
-        borderSide: const BorderSide(color: Colors.grey, width: 1.5),
-      ),
-      focusedBorder: OutlineInputBorder(
-        gapPadding: 0.0,
-        borderRadius: BorderRadius.circular(circularRadius),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
+  Widget _itemRow(BuildContext context) {
+    return SizedBox(
+        height: 150,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            // button with left arrow
+            TextButton(
+              onPressed: ()=>{
+                setState(() {
+                  _currentBusIndex = (_currentBusIndex - 1).clamp(0, busRealTimeData.length - 1);
+                }),
+                moveToPossibleBusLocation(_currentBusIndex),
+              },
+              child: const Icon(Icons.arrow_back_ios, size: 40, color: Colors.blue,),
+            ),
+
+            _itemBuilder(context, _currentBusIndex),
+            // button with right arrow
+            TextButton(
+              onPressed: ()=>{
+                setState(() {
+                  _currentBusIndex = (_currentBusIndex + 1).clamp(0, busRealTimeData.length - 1);
+                }),
+
+                moveToPossibleBusLocation(_currentBusIndex),
+              },
+              child: const Icon(Icons.arrow_forward_ios, size: 40, color: Colors.blue,),
+            ),
+          ],
+        )
+    );
+  }
+
+  Widget _itemBuilder(BuildContext context, int index) {
+    return InkWell(
+        child: Card(
+          elevation: 10,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(circularRadius),
+          ),
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.35,
+            height: 150,
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    "Bus ${busRealTimeData[index]!.busId}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  Text(
+                  "Passengers: ${busRealTimeData[index]?.busPeopleNumber}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.orange,
+                    ),
+                  ),
+                  Text(
+                    "Co2: ${busRealTimeData[index]?.busPeopleNumber}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              )
+
+
+          ),
+        ),
+        onTap: () {
+          // setState(() {
+          //   _selectedIndex = index;
+          // });
+        }
     );
   }
 
