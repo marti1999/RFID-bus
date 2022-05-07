@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/views/authenticate/sign_in.dart';
-import 'package:rfid_hackaton/views/authenticate/register.dart';
+import 'package:rfid_hackaton/views/authenticate/sign_up.dart';
 
 class Authenticate extends StatefulWidget {
   const Authenticate({Key? key}) : super(key: key);
@@ -10,11 +10,23 @@ class Authenticate extends StatefulWidget {
 }
 
 class _AuthenticateState extends State<Authenticate> {
+
+  bool showSignIn = true;
+
+  void toggleView(){
+    setState(() => showSignIn = !showSignIn);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // child: SignIn(),
-      child: Register(),
-    );
+    if(showSignIn){
+      return SignIn(toggleView: toggleView);
+    }else{
+      return Register(toggleView: toggleView);
+    }
+    // return Container(
+    //   // child: SignIn(),
+    //   child: Register(),
+    // );
   }
 }
