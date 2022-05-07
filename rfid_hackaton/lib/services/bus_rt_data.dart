@@ -2,19 +2,8 @@ import 'dart:math';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class BusRtData {
-  final String busId;
-  final int busPeopleNumber;
-  final String busTime;
-  final LatLng busLocation;
+import '../models/bus_real_data.dart';
 
-  BusRtData({
-    required this.busId,
-    required this.busPeopleNumber,
-    required this.busTime,
-    required this.busLocation,
-  });
-}
 
 class BusRealtimeData {
 
@@ -48,12 +37,16 @@ class BusRealtimeData {
   List<BusRtData> generateBusRealtimeData(LatLng origin, LatLng destination) {
      // generate random  buses data
      List<BusRtData> busRtData = [];
+
+     LatLng randomLatLng = generateRandomLatLng(origin, destination);
+
      for (int i = 0; i < 10; i++) {
        busRtData.add(BusRtData(
          busId: randomBusId(),
          busPeopleNumber: Random().nextInt(100),
          busTime: '${Random().nextInt(24)}:${Random().nextInt(60)}',
-         busLocation: generateRandomLatLng(origin, destination),
+         busLatitude: randomLatLng.latitude,
+         busLongitude: randomLatLng.longitude,
        ));
      }
      return busRtData;

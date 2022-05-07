@@ -1,5 +1,6 @@
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:rfid_hackaton/services/map_service.dart';
 
 class GpsService {
   /// Determine the current position of the device.
@@ -48,16 +49,22 @@ class GpsService {
 
     Position position = await determinePosition();
 
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
-    );
+    try{
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
 
-    if (placemarks.isNotEmpty) {
-      Placemark placemark = placemarks.first;
-      address = '${placemark.name}, ${placemark.subLocality}, ${placemark.locality}, ${placemark.postalCode}, ${placemark.country}';
+      if (placemarks.isNotEmpty) {
+        Placemark placemark = placemarks.first;
+        address = '${placemark.name}, ${placemark.subLocality}, ${placemark.locality}, ${placemark.postalCode}, ${placemark.country}';
+      }
+
+      return address;
     }
-
-    return address;
+    catch(e){
+      print(e);
+      return address;
+    }
   }
 }
