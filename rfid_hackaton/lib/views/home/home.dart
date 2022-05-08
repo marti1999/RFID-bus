@@ -116,5 +116,5 @@ class _MyHomePageState extends State<Home> {
 }
 
 Future addUserTest(String id, String name, int age) async {
-  await DatabaseService(userID: id).updateUserData(name, age);
+  await DatabaseService(userID: id).updateUserData(name);
 }

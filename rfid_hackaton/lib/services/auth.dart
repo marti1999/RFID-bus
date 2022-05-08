@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:rfid_hackaton/models/my_user.dart';
+import 'package:rfid_hackaton/services/database.dart';
 
 class AuthService {
 
@@ -48,7 +49,10 @@ Future registerWithEmailAndPassword(String email, String passwd) async{
     try{
       UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: passwd);
       User? user = result.user;
-      return _userFromFirebaseUser(user!);
+
+      await DatabaseService(userID: user!.uid).updateUserData(user.email!);
+
+      return _userFromFirebaseUser(user);
     }catch(e){
       print(e.toString());
       return null;
