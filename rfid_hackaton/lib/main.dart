@@ -14,11 +14,11 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: FirebaseOptions(
-        apiKey: "XXXXXXX",
-        appId: "XXXX",
-        messagingSenderId: "XXX",
-        projectId: "XXXX"
+    options:  FirebaseOptions(
+        apiKey: "AIzaSyAY87vG_P_n9zzGTNOuzVygIbj07FfiZwI",
+        appId: "964587985452-udiad96qt2d1e1nmhur4ci4cp0lh4iip.apps.googleusercontent.com",
+        messagingSenderId: "Hola",
+        projectId: "graphical-bus-348706",
     ),
   );
   runApp(const MyApp());
@@ -42,11 +42,11 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        localizationsDelegates: [
+        localizationsDelegates: const [
           FormBuilderLocalizations.delegate,
         ],
         darkTheme: ThemeData.dark(),
-        home: Wrapper(),
+        home: const Wrapper(),
       ),
     );
 

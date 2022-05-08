@@ -11,7 +11,7 @@ import '../services/map_service.dart';
 import '../services/realtime_database.dart';
 
 class BusView extends StatefulWidget {
-  const BusView({Key? key, required this.title, this.origin, this.destination, this.polylines, this.polylineCoordinates, this.markers}) : super(key: key);
+  const BusView({Key? key, required this.title, this.origin, this.destination, this.polylines, this.polylineCoordinates, this.markers, this.destinationName, this.originName}) : super(key: key);
 
   final String title;
   final LatLng? origin;
@@ -19,6 +19,9 @@ class BusView extends StatefulWidget {
   final List<LatLng>? polylineCoordinates;
   final Map<PolylineId, Polyline>? polylines;
   final Map<MarkerId, Marker>? markers;
+
+  final String? originName;
+  final String? destinationName;
 
   @override
   State<BusView> createState() => _BusViewState();
@@ -44,6 +47,7 @@ class _BusViewState extends State<BusView> {
   bool _followBus = false;
 
   String _currentBusText = "";
+
   void createPolyLine(List<LatLng> points) {
     final int polylineCount = polylines.length;
 
@@ -126,29 +130,39 @@ class _BusViewState extends State<BusView> {
   /// It will then call the generateMarker function to add a marker to the map.
   /// Finally, it will call the showMarkerAnimation function to animate the camera to the marker.
   /// This function is called when the user writes a query.
-  Future<void> moveToPossibleBusLocation(int  busId) async {
+  Future<void> moveToPossibleBusLocation(int busId, {double zoom = 10.4746}) async {
+    if (busRealTimeData != null && busRealTimeData.isNotEmpty) {
+      // get the bus location
+      BusRtData busRtData = busRealTimeData[busId]!;
 
-    // get the bus location
-    BusRtData busRtData = busRealTimeData[busId]!;
+      LatLng busPosition = LatLng(busRtData.busLatitude, busRtData.busLongitude);
 
-    LatLng busPosition = LatLng(busRtData.busLatitude, busRtData.busLongitude);
-
-    _currentBusText = busPosition.toString();
-    // get the bus location
+      _currentBusText = busPosition.toString();
+      // get the bus location
 
 
-    final GoogleMapController controller = await _controller.future;
+      final GoogleMapController controller = await _controller.future;
 
-    try {
-      //widget.polylineCoordinates!.add(busPosition);
+      try {
+        //widget.polylineCoordinates!.add(busPosition);
 
-      final cameraUpdate = CameraUpdate.newLatLngZoom(busPosition, 6.4746);
+        //final cameraUpdate = CameraUpdate.newLatLngZoom(busPosition, zoom);
 
-      controller.animateCamera(cameraUpdate);
+        final cameraUpdate = CameraUpdate.newCameraPosition(CameraPosition(
+          target: busPosition,
+          zoom: zoom,
+        ));
 
-    } catch (e) {
-      MapService().showAlertDialog(context,  'No location found for');
+        controller.animateCamera(cameraUpdate);
+
+      } catch (e) {
+        MapService().showAlertDialog(context,  'No location found for');
+      }
     }
+    else{
+      MapService().showAlertDialog(context,  'No buses are available yet!');
+    }
+
   }
 
   Future<void> updateMapLocation() async {
@@ -234,43 +248,157 @@ class _BusViewState extends State<BusView> {
         renderPanelSheet: false,
         collapsed: buildCollapsed(radius, isExpanded: false),
         panel: buildBottomSheet(radius),
-        body: buildGoogleMaps(context, widget.destination, widget.origin),
+        body: SlidingUpPanel(
+          renderPanelSheet: false,
+          borderRadius:  radius,
+          collapsed: buildTopPart(),
+          panel: buildTopPart(),
+          body: buildGoogleMaps(context, widget.destination, widget.origin),
+          slideDirection: SlideDirection.DOWN,
+        ),
         borderRadius:  radius,
         controller: _pc,
-        maxHeight: MediaQuery.of(context).size.height * 0.45,
+        maxHeight: MediaQuery.of(context).size.height * 0.35,
       ),
     );
 
+  }
+
+  Widget buildTopPart() {
+    List<Widget> children  = <Widget> [
+      Text(
+        "Passengers: ${busRealTimeData[_currentBusIndex]?.busPeopleNumber}",
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Colors.orange,
+        ),
+      ),
+      Text(
+        "Current Stop: ${busRealTimeData[_currentBusIndex]?.busStop}",
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Colors.orange,
+        ),
+      ),
+      Text(
+        "Next Stop: ${busRealTimeData[_currentBusIndex]?.busNextStop}",
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Colors.orange,
+        ),
+      ),
+    ];
+
+    if (widget.originName != null && widget.destinationName != null) {
+      children.add(
+        const Divider(
+          color: Colors.orange,
+          thickness: 1,
+        )
+      );
+
+      children.add(
+        Text(
+          'From: ${widget.originName}',
+          style: TextStyle(fontSize: 20),
+        ),
+      );
+
+      children.add(
+        Text(
+          'To: ${widget.destinationName}',
+          style: TextStyle(fontSize: 20),
+        ),
+      );
+    }
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.3,
+      width: MediaQuery.of(context).size.width,
+      margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(circularRadius),
+          bottomRight: Radius.circular(circularRadius),
+        ),
+      ),
+      child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+
+            ],
+          )),
+    );
   }
 
   Widget buildBody(BuildContext context , LatLng? destination, LatLng? origin) {
     return Stack(
       children:
       [
-
         buildGoogleMaps(context, destination, origin),
         Positioned(
           top: 0,
           child:
-        Container(
-            height: 50,
-            color: Colors.white,
+          Container(
+            height: MediaQuery.of(context).size.height * 0.5,
+            width: MediaQuery.of(context).size.width,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(circularRadius),
+                bottomRight: Radius.circular(circularRadius),
+              ),
+            ),
             child: Center(
-                child: Text(
-                  _currentBusText,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                )
-            )
-        ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Passengers: ${busRealTimeData[_currentBusIndex]?.busPeopleNumber}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    Text(
+                      "Current Stop: ${busRealTimeData[_currentBusIndex]?.busStop}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    Text(
+                      "Next Stop: ${busRealTimeData[_currentBusIndex]?.busNextStop}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    Text(
+                      "Current Location: ${busRealTimeData[_currentBusIndex]?.busLatitude}, ${busRealTimeData[_currentBusIndex]?.busLongitude}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    Text(
+                      "Co2: ${busRealTimeData[_currentBusIndex]?.busPeopleNumber}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                )),
+          ),
         ),
       ],
     );
   }
 
-    /// Builds the google maps widget
+  /// Builds the google maps widget
   Widget buildGoogleMaps(BuildContext context , LatLng? destination, LatLng? origin) {
 
     CameraPosition cameraPosition = CameraPosition(
@@ -286,7 +414,7 @@ class _BusViewState extends State<BusView> {
       }
 
       if (_followBus) {
-        moveToPossibleBusLocation(_currentBusIndex);
+        moveToPossibleBusLocation(_currentBusIndex, zoom: 14.4746);
       }
     }
 
@@ -365,8 +493,8 @@ class _BusViewState extends State<BusView> {
                 ),
               ]
           ),
-          padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
-          margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
+          padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 14.0),
+          margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 14.0),
           child:
           Column(
             mainAxisAlignment: MainAxisAlignment.start,
@@ -379,8 +507,6 @@ class _BusViewState extends State<BusView> {
                 const Center(
                   child: Text('No buses found'),
                 ),
-
-
             ],
           ),
         ),
@@ -391,9 +517,9 @@ class _BusViewState extends State<BusView> {
 
   Widget _itemRow(BuildContext context) {
     return SizedBox(
-        height: 150,
+        height: 100,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
             // button with left arrow
             TextButton(
@@ -403,7 +529,7 @@ class _BusViewState extends State<BusView> {
                 }),
                 moveToPossibleBusLocation(_currentBusIndex),
               },
-              child: const Icon(Icons.arrow_back_ios, size: 40, color: Colors.blue,),
+              child: const Icon(Icons.arrow_back_ios, size: 30, color: Colors.blue,),
             ),
 
             _itemBuilder(context, _currentBusIndex),
@@ -416,7 +542,7 @@ class _BusViewState extends State<BusView> {
 
                 moveToPossibleBusLocation(_currentBusIndex),
               },
-              child: const Icon(Icons.arrow_forward_ios, size: 40, color: Colors.blue,),
+              child: const Icon(Icons.arrow_forward_ios, size: 30, color: Colors.blue,),
             ),
           ],
         )
@@ -432,28 +558,22 @@ class _BusViewState extends State<BusView> {
             borderRadius: BorderRadius.circular(circularRadius),
           ),
           child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.35,
-            height: 150,
-            child: Column(
+              width: MediaQuery.of(context).size.width * 0.35,
+              height: 100,
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   Text(
-                    "Bus ${busRealTimeData[index]!.busId}",
+                    "Bus ${busRealTimeData[index]!.busLine}",
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),
                   ),
                   Text(
-                  "Passengers: ${busRealTimeData[index]?.busPeopleNumber}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.orange,
-                    ),
-                  ),
-                  Text(
-                    "Co2: ${busRealTimeData[index]?.busPeopleNumber}",
+                    "Current Location: ${busRealTimeData[_currentBusIndex]?.busLatitude}, ${busRealTimeData[_currentBusIndex]?.busLongitude}",
                     style: const TextStyle(
                       fontWeight: FontWeight.w500,
                       color: Colors.orange,
