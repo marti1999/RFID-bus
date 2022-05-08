@@ -12,6 +12,7 @@ import '../models/bus_real_data.dart';
 import '../services/map_service.dart';
 import '../services/realtime_database.dart';
 import 'bus_view.dart';
+import 'favorites_list.dart';
 
 class MapView extends StatefulWidget {
   const MapView({Key? key, required this.title}) : super(key: key);
@@ -160,17 +161,23 @@ class _MapViewState extends State<MapView> {
   double circularRadius = 10;
 
   @override
+  void initState() {
+    super.initState();
+
+    GpsService().getLocationAsAddress().then((value) =>
+        setState(() {
+          _location = value;
+        })
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     BorderRadiusGeometry radius = BorderRadius.only(
       topLeft: Radius.circular(circularRadius),
       topRight: Radius.circular(circularRadius),
     );
 
-    GpsService().getLocationAsAddress().then((value) =>
-      setState(() {
-        _location = value;
-      })
-    );
 
     return DefaultTextStyle(
       style: Theme.of(context).textTheme.headline2!,
@@ -192,7 +199,7 @@ class _MapViewState extends State<MapView> {
                       renderPanelSheet: false,
                       collapsed: buildCollapsed(radius, isExpanded: false),
                       panel: buildBottomSheet(radius),
-                      body: buildGoogleMaps(context, snapshot.data),
+                      body: FavoritesList(title: 'Your all time favourites', body:buildGoogleMaps(context, snapshot.data)),
                       borderRadius:  radius,
                       controller: _pc,
                       maxHeight: MediaQuery.of(context).size.height * 0.55,
@@ -250,6 +257,7 @@ class _MapViewState extends State<MapView> {
   }
 
 
+
   /// Builds the google maps widget
   Widget buildGoogleMaps(BuildContext context , Position? position) {
     LatLng _currentPosition = const LatLng(0, 0);
@@ -265,7 +273,7 @@ class _MapViewState extends State<MapView> {
 
     return GoogleMap(
       zoomControlsEnabled: true,
-        mapType: MapType.hybrid,
+        mapType: MapType.normal,
         initialCameraPosition: _kGooglePlex,
         markers: Set<Marker>.of(markers.values),
         polylines: Set<Polyline>.of(polylines.values),
@@ -351,7 +359,7 @@ class _MapViewState extends State<MapView> {
               TextFormField(
                     cursorHeight: 20,
                     onFieldSubmitted: (String value) {
-                      saveLocation(value, true);
+                      saveLocation(value, false);
                       FocusScope.of(context).requestFocus(textSecondFocusNode);
                     },
                     controller: TextEditingController(text: _location),
@@ -381,7 +389,15 @@ class _MapViewState extends State<MapView> {
                 onPressed: () {
                   createPolyLine(polylineCoordinates);
                   MapService().zoomToPolyline(_controller, polylineCoordinates);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => BusView(title: 'Bus Routes',polylineCoordinates: polylineCoordinates, destination: _destinationLatLng, origin: _locationLatLng, polylines: polylines, markers: markers,),));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                       BusView(title: 'Bus Routes',
+                         polylineCoordinates: polylineCoordinates,
+                         destination: _destinationLatLng,
+                         origin: _locationLatLng,
+                         destinationName: _destination,
+                          originName: _location,
+                         polylines : polylines,
+                         markers: markers,),));
                   // setState(() {
                   //   showBuses = true;
                   // });
