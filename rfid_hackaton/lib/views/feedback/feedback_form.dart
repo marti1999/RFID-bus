@@ -74,6 +74,7 @@ class _feedbackFormState extends State<feedbackForm> {
               child: HomeButton(
                 title: 'Home',
                 onTap: () {
+                  // TODO: preguntar al bruno com canviar de panatlla
                   print('clicat per tornar a Home');
                 },
               ),
