@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/services/auth.dart';
 import 'package:rfid_hackaton/shared/constants.dart';
+import 'package:rfid_hackaton/shared/loading.dart';
 
 class Register extends StatefulWidget {
 
@@ -15,6 +16,7 @@ class _RegisterState extends State<Register> {
 
    final AuthService _auth = AuthService();
    final _formKey = GlobalKey<FormState>();
+   bool loading = false;
 
    //text field state
   String email = '';
@@ -23,7 +25,7 @@ class _RegisterState extends State<Register> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return loading ? Loading():Scaffold(
           backgroundColor: Colors.brown[100],
           appBar: AppBar(
             backgroundColor: Colors.brown[400],
@@ -87,9 +89,13 @@ class _RegisterState extends State<Register> {
                     child: const Text('Sign up'),
                     onPressed: () async {
                       if(_formKey.currentState!.validate()){
+                        setState(() => loading = true);
                         dynamic result = await _auth.registerWithEmailAndPassword(email, passwd);
                         if(result == null){
-                          setState(() => error = 'plase supply a valid email');
+                          setState(() {
+                            error = 'could not sign in with credentials';
+                            loading = false;
+                          });
                         }
                       }
                     }

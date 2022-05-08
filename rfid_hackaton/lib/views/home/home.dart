@@ -89,6 +89,16 @@ class _MyHomePageState extends State<Home> {
               },
             ),
             ListTile(
+              title: Text("Realtime (IoT per buseros)"),
+              leading: Icon(Icons.add_location),
+              onTap: (){
+                setState(() {
+                  body_widget_index = 2;
+                  Navigator.pop(context);
+                });
+              },
+            ),
+            ListTile(
               title: Text("log out"),
                 leading: Icon(Icons.logout),
               onTap: () async {
