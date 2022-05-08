@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/models/my_user.dart';
+import 'package:rfid_hackaton/views/profile/edit_profile_page.dart';
 import 'package:rfid_hackaton/views/profile/utils/user_preferences.dart';
 import 'package:rfid_hackaton/views/profile/widgets/appbar_widget.dart';
 import 'package:rfid_hackaton/views/profile/widgets/numbers_widget.dart';
@@ -24,7 +25,11 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             ProfileWidget(
                 imagePath: user.imagePath!,
-                onClicked: () async{}
+                onClicked: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => EditProfilePage())
+                  );
+                }
             ),
             const SizedBox(height: 24),
             buildName(user),
