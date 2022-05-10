@@ -10,10 +10,10 @@ class DatabaseService {
   final CollectionReference userCol = FirebaseFirestore.instance.collection('users');
   final CollectionReference feedbackCol = FirebaseFirestore.instance.collection('feedback');
 
-  Future updateUserData(String name, int age) async {
+  Future updateUserData(String email) async {
     return await userCol.doc(userID).set({
-      'name':name,
-      'age':age,
+      'email':email,
+      // 'age':15
     });
   }
 

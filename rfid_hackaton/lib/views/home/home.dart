@@ -7,6 +7,7 @@ import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';
 
 import '../company/realtime_dashboard.dart';
+import '../profile/profile.dart';
 
 
 class Home extends StatefulWidget {
@@ -19,7 +20,7 @@ class Home extends StatefulWidget {
 
 class _MyHomePageState extends State<Home> {
   int _counter = 0;
-  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm()];
+  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm(), ProfilePage()];
   int body_widget_index = 0;
 
   final AuthService _auth = AuthService();
@@ -69,7 +70,12 @@ class _MyHomePageState extends State<Home> {
             ListTile(
               title: Text("Profile"),
               leading: Icon(Icons.account_circle),
-              onTap: (){},
+              onTap: (){
+                setState(() {
+                  body_widget_index = 2;
+                  Navigator.pop(context);
+                });
+              },
             ),
             ListTile(
               title: Text("add user test"),
@@ -116,5 +122,5 @@ class _MyHomePageState extends State<Home> {
 }
 
 Future addUserTest(String id, String name, int age) async {
-  await DatabaseService(userID: id).updateUserData(name, age);
+  await DatabaseService(userID: id).updateUserData(name);
 }
