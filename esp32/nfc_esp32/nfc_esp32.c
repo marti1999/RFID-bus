@@ -12,35 +12,18 @@
 #define LED_GREEN_PIN 32
 #define LED_RED_PIN 33
 
-#define APY_KEY = AIzaSyAY87vG_P_n9zzGTNOuzVygIbj07FfiZwI
-#define PROJECT_ID = graphical-bus-348706
-#define PROJECT_NUMBER = 964587985452
-
+// Declaració modul RFID
 MFRC522 rfid(SS_PIN, RST_PIN);
 
-byte Usuario1[7]= {0x53, 0x5A, 0x2E, 0x69, 0x70, 0x00, 0x01} ;
-
 char jsonOutput[128];
-
-void leds_1s(){
-  Serial.print("Leds1s");
-  digitalWrite(LED_RED_PIN, HIGH); 
-  delay(480);
-  digitalWrite(LED_RED_PIN, LOW);
-  delay(10); 
-  digitalWrite(LED_GREEN_PIN, HIGH);                       
-  delay(480); 
-  digitalWrite(LED_GREEN_PIN, LOW);    
-  delay(10); 
-}
 
 void initWiFi() {
   /**
    * Inicialitza el modul de xarxa Wifi
    * Durant el procés, activa el led vermell i al finalitzar activa el led verd per confirmar la connexió.
    */
-  const char* ssid = "Casa_Garrofe1";
-  const char* password = "garrofeurrutia";
+  const char* ssid = "";
+  const char* password = "";
  
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -105,7 +88,8 @@ bool check_uid(char *uid) {
    * @param : Identificador de la targeta o dispositiu NFC.
    * @return : Bolèa indicant si la validació i actualització és correcte.
    */
-  String serverPath = "https://firestore.googleapis.com/v1/projects/graphical-bus-348706/databases/(default)/documents/rfid_cards/" + String(uid);
+  String serverPath = "https://graphical-bus-348706-2.europe-west1.firebasedatabase.app/rfid_cards/" + String(uid) + ".json";
+  Serial.println(serverPath);
   HTTPClient http;
   http.useHTTP10(true);
   http.begin(serverPath.c_str());
@@ -117,7 +101,13 @@ bool check_uid(char *uid) {
     DynamicJsonDocument doc(2048);
     deserializeJson(doc, http.getStream());
 
-    int num_viatges = doc["fields"]["viatges"]["integerValue"].as<int>();    
+    int num_viatges = doc["viatges"].as<int>(); 
+
+    // Si el numero de viatges es zero (null), la targeta no esta registrada.
+    if(num_viatges == 0) {
+      Serial.println("[ERROR] : Targeta no registrada");
+      return false;
+    }
     
     Serial.println("Numero de viatges : " + String(num_viatges));
     
@@ -126,35 +116,37 @@ bool check_uid(char *uid) {
 
     http.end();
 
-    String url = "https://firestore.googleapis.com/v1/projects/graphical-bus-348706/databases/(default)/documents/rfid_cards/" + String(uid) + "/?updateMask.fieldPaths=viatges";
+    String url = "https://graphical-bus-348706-2.europe-west1.firebasedatabase.app/rfid_cards/" + String(uid) + ".json";
+    /*
     HTTPClient http2;
     http2.begin(url);
     http2.addHeader("Content-Type", "application/json");
     http2.addHeader("Accept", "application/json");
+    */
+    http.begin(url.c_str());
 
 
-    String jsonReturn = "{\"fields\":{\"viatges\":{\"integerValue\":\"" + String(num_viatges) + "\"}}}";
+    String jsonReturn = "{\"viatges\":\"" + String(num_viatges) + "\"}";
 
-    httpResponseCode = http2.PATCH(String(jsonReturn));
+    httpResponseCode = http.PATCH(String(jsonReturn));
 
     String payload;
-    payload = http2.getString();
+    payload = http.getString();
 
-    http2.end();
+    http.end();
 
     if (httpResponseCode>0 != 404) {
-      Serial.print("Viatges Updated OK");
+      Serial.println("[OK !] : Viatges Updated");
       return true;
     } else {
-      Serial.print("Viatges ERROR");
+      Serial.println("[ERROR] : Response code " + String(httpResponseCode));
       return false;
     }
     
     
   }
   else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
+    Serial.println("[ERROR] : Response code " + String(httpResponseCode));
     return false;
   }
 
@@ -209,7 +201,6 @@ void loop() {
       if(check_uid(output) == true) {
         led_green_1s();
       } else {
-        Serial.print("ERROR");
         led_red_1s();
       }
 
