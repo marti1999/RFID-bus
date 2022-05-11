@@ -117,12 +117,6 @@ bool check_uid(char *uid) {
     http.end();
 
     String url = "https://graphical-bus-348706-2.europe-west1.firebasedatabase.app/rfid_cards/" + String(uid) + ".json";
-    /*
-    HTTPClient http2;
-    http2.begin(url);
-    http2.addHeader("Content-Type", "application/json");
-    http2.addHeader("Accept", "application/json");
-    */
     http.begin(url.c_str());
 
 
@@ -174,8 +168,6 @@ void loop() {
   if (rfid.PICC_IsNewCardPresent()) { // new tag is available
     if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
       MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-      // Serial.print("RFID/NFC Tag Type: ");
-      // Serial.println(rfid.PICC_GetTypeName(piccType));
 
       led_red_fast();
       led_green_fast();
