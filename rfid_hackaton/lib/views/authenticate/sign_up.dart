@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/services/auth.dart';
 import 'package:rfid_hackaton/shared/constants.dart';
 import 'package:rfid_hackaton/shared/loading.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
 
 class Register extends StatefulWidget {
 
@@ -21,6 +23,10 @@ class _RegisterState extends State<Register> {
    //text field state
   String email = '';
   String passwd = '';
+  String name = '';
+  String imagePath = 'none';
+  String city = 'Barcelona';
+  String sex = '';
   String error = '';
 
   @override
@@ -47,6 +53,22 @@ class _RegisterState extends State<Register> {
               key: _formKey,
               child:Column(
                 children: <Widget>[
+                  SizedBox(height: 20.0,),
+                  TextFormField(
+                    // validator: (val) => val!.isEmpty ? 'Enter an Email': null,
+
+                    decoration: textInputDecoration.copyWith(hintText: 'Name'),
+                    validator: (val) {
+                      if(val != null && val.isEmpty ){
+                        return "Enter an Name";
+                      }else{
+                        return null;
+                      }
+                    },
+                    onChanged: (val){
+                      setState(() => name = val);
+                    },
+                  ),
                   SizedBox(height: 20.0,),
                   TextFormField(
                     // validator: (val) => val!.isEmpty ? 'Enter an Email': null,
@@ -82,6 +104,63 @@ class _RegisterState extends State<Register> {
                     },
                   ),
                   SizedBox(height: 20.0,),
+                  DropdownButtonFormField(
+                    value: city,
+                      icon: Icon(Icons.arrow_downward),
+
+                      onChanged: (value){
+                        setState(() {
+                          city = value.toString();
+                        });
+                      },
+                    items: [
+                      DropdownMenuItem(child: Text("Barcelona"), value:"Barcelona"),
+                      DropdownMenuItem(child: Text("Sabadell"), value:"Sabadell"),
+                      DropdownMenuItem(child: Text("San Cugat"), value:"San Cugat"),
+                      DropdownMenuItem(child: Text("Terrassa"), value:"Terrassa")
+                    ],
+                  ),
+                  SizedBox(height: 20.0,),
+                  ListTile(
+                    title: Text("Male"),
+                    leading: Radio(
+                      value: "Male",
+                      groupValue: sex,
+                      onChanged: (value) {
+                        setState(() {
+                          sex = value.toString();
+                        });
+                      },
+                      activeColor: Colors.blue,
+                    ),
+                  ),
+                  ListTile(
+                    title: Text("Female"),
+                    leading: Radio(
+                      value: "Female",
+                      groupValue: sex,
+                      onChanged: (value) {
+                        setState(() {
+                          sex = value.toString();
+                        });
+                      },
+                      activeColor: Colors.blue,
+                    ),
+                  ),
+                  ListTile(
+                    title: Text("Other"),
+                    leading: Radio(
+                      value: "Other",
+                      groupValue: sex,
+                      onChanged: (value) {
+                        setState(() {
+                          sex = value.toString();
+                        });
+                      },
+                      activeColor: Colors.blue,
+                    ),
+                  ),
+                  SizedBox(height: 20.0,),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       primary: Colors.pink[400],
@@ -90,7 +169,7 @@ class _RegisterState extends State<Register> {
                     onPressed: () async {
                       if(_formKey.currentState!.validate()){
                         setState(() => loading = true);
-                        dynamic result = await _auth.registerWithEmailAndPassword(email, passwd);
+                        dynamic result = await _auth.registerWithEmailAndPassword(email, passwd, name, imagePath, sex,city);
                         if(result == null){
                           setState(() {
                             error = 'could not sign in with credentials';

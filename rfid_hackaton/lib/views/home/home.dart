@@ -81,7 +81,7 @@ class _MyHomePageState extends State<Home> {
               title: Text("add user test"),
               leading: Icon(Icons.create_new_folder),
               onTap: (){
-                addUserTest('15', 'marti', 34);
+                // addUserTest('15', 'marti', 34);
               },
             ),
             ListTile(
@@ -121,6 +121,6 @@ class _MyHomePageState extends State<Home> {
   }
 }
 
-Future addUserTest(String id, String name, int age) async {
-  await DatabaseService(userID: id).updateUserData(name);
-}
+// Future addUserTest(String id, String name, int age) async {
+//   await DatabaseService(userID: id).updateUserData(name);
+// }
