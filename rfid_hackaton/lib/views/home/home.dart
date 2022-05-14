@@ -99,21 +99,20 @@ class _MyHomePageState extends State<Home> {
               leading: Icon(Icons.add_location),
               onTap: (){
                 setState(() {
-                  body_widget_index = 2;
+                  body_widget_index = 3;
                   Navigator.pop(context);
                 });
               },
             ),
             ListTile(
-              title: Text("log out"),
+              title: Text("Log Out"),
                 leading: Icon(Icons.logout),
               onTap: () async {
                 await _auth.signOut();
               },
             ),
-            ListTile(
+            const ListTile(
               title: Text("Version App 0.0.1"),
-
             ),
           ],
         )
