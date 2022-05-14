@@ -1,40 +1,50 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:rfid_hackaton/models/bus_stop.dart';
 
 class BusRtData {
-  final String busId;
-  final String busLine;
-  final int busPeopleNumber;
-  final double busLatitude;
-  final double busLongitude;
-  final String busStop;
-  final String busNextStop;
+  final String busLineId;
+  final String busLineName;
+  final BusStop busLineNextStop;
+  final BusStop busLineCurrentStop;
+  final int busLinePeopleNumber;
+  final double busLineLatitude;
+  final double busLineLongitude;
+  final List<String> busLineRoute;
+  final int currentStopIndex;
 
   BusRtData({
-    required this.busId,
-    required this.busLine,
-    required this.busPeopleNumber,
-    required this.busLatitude,
-    required this.busLongitude,
-    required this.busStop,
-    required this.busNextStop
+    required this.busLineId,
+    required this.busLineName,
+    required this.busLineNextStop,
+    required this.busLineCurrentStop,
+    required this.busLinePeopleNumber,
+    required this.busLineLatitude,
+    required this.busLineLongitude,
+    required this.busLineRoute,
+    required this.currentStopIndex,
   });
 
   BusRtData.fromJson(Map<dynamic, dynamic> json)
-      : busId = json['busId'] as String,
-        busLine = json['busLine'] as String,
-        busPeopleNumber = json['busPeopleNumber'] as int,
-        busLatitude = json['busLatitude'] as double,
-        busLongitude = json['busLongitude'] as double,
-        busStop = json['busStop'] as String,
-        busNextStop = json['busNextStop'] as String;
+      : busLineId = json['line_id'] as String,
+        busLineName = json['line_name'] as String,
+        busLineNextStop = BusStop.fromJson(json['next_stop']),
+        busLineCurrentStop = BusStop.fromJson(json['stop']),
+        busLinePeopleNumber = json['people_number'] as int,
+        busLineLatitude = json['lat'] as double,
+        busLineLongitude = json['lng'] as double,
+        busLineRoute = (json['stops'] as List<dynamic>).cast<String>(),
+        currentStopIndex = json['current_stop_index'] as int;
+
 
   Map<dynamic, dynamic> toJson() => <dynamic, dynamic>{
-    'busId': busId,
-    'busLine': busLine,
-    'busPeopleNumber': busPeopleNumber,
-    'busLatitude': busLatitude,
-    'busLongitude': busLongitude,
-    'busStop': busStop,
-    'busNextStop': busNextStop
+    'line_id': busLineId,
+    'line_name': busLineName,
+    'next_stop': busLineNextStop.toJson(),
+    'stop': busLineCurrentStop.toJson(),
+    'people_number': busLinePeopleNumber,
+    'lat': busLineLatitude,
+    'lng': busLineLongitude,
+    'stops': busLineRoute,
+    'current_stop_index': currentStopIndex,
   };
 }

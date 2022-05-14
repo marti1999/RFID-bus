@@ -1,5 +1,10 @@
+import 'dart:math';
+
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:rfid_hackaton/models/bus_real_data.dart';
+import 'package:rfid_hackaton/models/bus_stop.dart';
 import 'package:rfid_hackaton/services/map_service.dart';
 
 class GpsService {
@@ -66,5 +71,162 @@ class GpsService {
       print(e);
       return address;
     }
+  }
+
+  double deg2rad(double deg) {
+    return deg * (pi / 180);
+  }
+
+  double rad2deg(double rad) {
+    return rad * (180 / pi);
+  }
+
+  double getDistance(double lat1, double lon1, double lat2, double lon2) {
+    double theta = lon1 - lon2;
+    double dist = sin(deg2rad(lat1)) * sin(deg2rad(lat2)) + cos(deg2rad(lat1)) * cos(deg2rad(lat2)) * cos(deg2rad(theta));
+    dist = acos(dist);
+    dist = rad2deg(dist);
+    dist = dist * 60 * 1.1515;
+    return dist;
+  }
+
+  String getNearestBusStop(double latitude, double longitude,  List<BusStop> _busStops) {
+
+    String _location = _busStops.first.stopName;
+    double minDistance = double.maxFinite;
+
+    // get nearest bus stop
+    for (var i = 0; i < _busStops.length; i++) {
+      var busStop = _busStops[i];
+
+      var distance = getDistance(latitude, longitude, busStop.stopLatitude, busStop.stopLongitude);
+
+      if (distance < minDistance) {
+        _location = busStop.stopName;
+        minDistance = distance;
+      }
+    }
+
+    return _location;
+  }
+
+
+  String getFurtherBusStop(double latitude, double longitude,  List<BusStop> _busStops) {
+
+    String _location = _busStops.first.stopName;
+    double maxDistance = 0;
+
+    // get nearest bus stop
+    for (var i = 0; i < _busStops.length; i++) {
+      var busStop = _busStops[i];
+
+      var distance = getDistance(latitude, longitude, busStop.stopLatitude, busStop.stopLongitude);
+
+      if (distance > maxDistance) {
+        _location = busStop.stopName;
+        maxDistance = distance;
+      }
+    }
+
+    return _location;
+  }
+
+  BusRtData getBusLineByStopId(String stopId, List<BusRtData> _busRealData) {
+    for (var i = 0; i < _busRealData.length; i++) {
+      var busLine = _busRealData[i];
+
+      bool stopFound = busLine.busLineRoute.contains(stopId);
+
+      if (stopFound) {
+        print(busLine);
+        return busLine;
+      }
+    }
+
+    return _busRealData.first;
+  }
+
+  List<BusRtData> getBusLinesByStopId(String stopId, List<BusRtData> _busRealData) {
+    List<BusRtData> _busLines = [];
+
+    for (var i = 0; i < _busRealData.length; i++) {
+      var busLine = _busRealData[i];
+
+      bool stopFound = busLine.busLineRoute.contains(stopId);
+
+      if (stopFound) {
+        _busLines.add(busLine);
+      }
+    }
+
+    return _busLines;
+  }
+
+  void _calculateBusTransfer(Map<String, List<LatLng>> routes, BusStop origin, BusStop destination, List<BusStop> busStops, List<BusRtData> _busLines) {
+    // get a bus line where origin is in it and there is a bus stop that allows you to go to anotgher bus line that has the destination
+
+    List<BusRtData> _originPossibleLines = getBusLinesByStopId(origin.stopId, _busLines);
+
+    List<BusRtData> _destinationPossibleLines = getBusLinesByStopId(destination.stopId, _busLines);
+
+
+    //  find cicles that have the origin and destination
+    List<BusRtData> _originDestinationLines = [];
+
+    for (var i = 0; i < _originPossibleLines.length; i++) {
+      var busLine = _originPossibleLines[i];
+
+      bool stopFound = busLine.busLineRoute.contains(destination.stopId);
+
+      if (stopFound) {
+        _originDestinationLines.add(busLine);
+      }
+    }
+
+  }
+
+  Map<String, List<LatLng>> getRouteBetweenCoordinates(BusStop origin, BusStop destination, List<BusStop> busStops, List<BusRtData> _busLines) {
+    /* With the origin and destination coordinates, and the list of bus stops, we can now find the shortest path between the two points. */
+
+    Map<String, List<LatLng>> routes = <String, List<LatLng>>{};
+
+    List<BusRtData> busLinesCopy  = [..._busLines];
+
+    for (var i = 0; i < _busLines.length; i++) {
+      var busLine = _busLines[i];
+
+
+      bool originFound = busLine.busLineRoute.contains(origin.stopId);
+      bool destinationFound = busLine.busLineRoute.contains(destination.stopId);
+
+      if (originFound && destinationFound) {
+        routes[busLine.busLineId] = <LatLng>[];
+        routes[busLine.busLineId]!.add(LatLng(origin.stopLatitude, origin.stopLongitude));
+        routes[busLine.busLineId]!.add(LatLng(destination.stopLatitude, destination.stopLongitude));
+      }else{
+        busLinesCopy.remove(busLine);
+      }
+    }
+
+    if (busLinesCopy.isEmpty) {
+      _calculateBusTransfer(routes, origin, destination, busStops, _busLines);
+      return routes;
+    }else {
+      for (var j = 0; j < busLinesCopy.length; j++) {
+        var busLine = busLinesCopy[j];
+
+        for (var i = 0; i < busStops.length; i++) {
+          var busStop = busStops[i];
+          bool busLineFound = busLine.busLineRoute.contains(busStop.stopId);
+
+
+          if (busLineFound) {
+            routes[busLine.busLineId]?.add(
+                LatLng(busStop.stopLatitude, busStop.stopLongitude));
+          }
+        }
+      }
+    }
+    return  routes;
   }
 }

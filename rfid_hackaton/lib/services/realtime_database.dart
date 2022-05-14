@@ -9,12 +9,15 @@ class RealDatabaseService {
     return _messagesRef;
   }
 
+
+
   // TODO: Add a method to modify or add a new bus line to the database
   Future<void> addMessage(String message) async {
     await _messagesRef.push().set({
       'text': message,
     });
   }
+
 
 
 }

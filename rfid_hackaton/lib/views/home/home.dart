@@ -19,7 +19,7 @@ class Home extends StatefulWidget {
 
 class _MyHomePageState extends State<Home> {
   int _counter = 0;
-  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm()];
+  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm(), RealtimeDashboard(title: 'Realtime Dashboard')];
   int body_widget_index = 0;
 
   final AuthService _auth = AuthService();
