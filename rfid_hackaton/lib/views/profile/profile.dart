@@ -7,6 +7,8 @@ import 'package:rfid_hackaton/views/profile/widgets/appbar_widget.dart';
 import 'package:rfid_hackaton/views/profile/widgets/numbers_widget.dart';
 import 'package:rfid_hackaton/views/profile/widgets/profile_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rfid_hackaton/services/database.dart';
+
 
 
 class ProfilePage extends StatefulWidget {
@@ -17,12 +19,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 String _userid = '';
+MyUser _user = MyUser(km: null);
 
 class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: _getUID(),
+        future: _getCurrentUser(),
         builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
           if (snapshot.hasData) {
             final user = UserPreferences.user;
@@ -65,8 +68,11 @@ Widget buildName(MyUser user) => Column(
   ],
 );
 
-Future<String> _getUID() async {
+
+
+Future<String> _getCurrentUser() async{
   final prefs = await SharedPreferences.getInstance();
   _userid = prefs.getString('uid') ?? '';
+  _user = await DatabaseService(userID: _userid).getUserByUID(_userid);
   return _userid;
 }

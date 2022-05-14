@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:rfid_hackaton/models/my_user.dart';
 class DatabaseService {
 
   final String userID;
@@ -14,14 +15,24 @@ class DatabaseService {
     return await userCol.doc(userID).set({
       'email':email,
       'name': name,
-      'co2': 0.0,
+      'co2saved': 0.0,
       'km': 0.0,
-      'darkMode': false,
+      'isDarkMode': false,
       'imagePath': imagePath,
       'sex':sex,
       'city': city
       // 'age':15
     });
+  }
+
+  Future<MyUser> getUserByUID(String uid) async {
+    DocumentSnapshot snapshot =  await userCol.doc(uid).get();
+    if(snapshot.exists) {
+      MyUser user = MyUser.fromSnapshot(snapshot.data() as Map<String, dynamic>);
+      return user;
+    }
+    throw("ERROR GET USER BY UID - database.dart");
+
   }
 
 
