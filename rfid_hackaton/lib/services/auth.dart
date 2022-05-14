@@ -8,7 +8,8 @@ class AuthService {
   
   // crear MyUser basat en l'usuari de Firebase
   MyUser? _userFromFirebaseUser(User user){
-    return user != null ? MyUser(uid: user.uid) : null;
+    return user != null ? MyUser(
+        uid: user.uid, name: null, email: user.email, city: null, co2saved: null, km: null, isDarkMode: false ) : null;
   }
 
   // Steam escoltant per Auth Changes. Cada cop que entri o surti, s'activa el listener
@@ -45,12 +46,12 @@ class AuthService {
   }
 
   // register with email and password
-Future registerWithEmailAndPassword(String email, String passwd) async{
+Future registerWithEmailAndPassword(String email, String passwd, String name, String imagePath, String sex, String city) async{
     try{
       UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: passwd);
       User? user = result.user;
 
-      await DatabaseService(userID: user!.uid).updateUserData(user.email!);
+      await DatabaseService(userID: user!.uid).updateUserData(user.email!, name, imagePath, sex,city);
 
       return _userFromFirebaseUser(user);
     }catch(e){
