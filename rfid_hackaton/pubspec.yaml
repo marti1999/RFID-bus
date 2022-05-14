@@ -49,6 +49,7 @@ dependencies:
   flutter_svg: ^1.0.3
   flutter_spinkit: ^5.1.0
   firebase_storage: ^10.2.16
+  shared_preferences: ^2.0.15
 
 
 dev_dependencies:
