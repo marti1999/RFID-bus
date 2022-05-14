@@ -28,7 +28,7 @@ class _ProfilePageState extends State<ProfilePage> {
         future: _getCurrentUser(),
         builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
           if (snapshot.hasData) {
-            final user = UserPreferences.user;
+
 
             return Scaffold(
                 appBar: buildAppBar(context),
@@ -36,16 +36,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   physics: BouncingScrollPhysics(),
                   children: [
                     ProfileWidget(
-                        imagePath: user.imagePath!,
+
                         onClicked: () {
-                          Navigator.of(context).push(
-                              MaterialPageRoute(builder: (context) => EditProfilePage())
-                          );
+                          // Navigator.of(context).push(
+                          //     MaterialPageRoute(builder: (context) => EditProfilePage())
+                          // );
                         }
                     ),
                     const SizedBox(height: 24),
-                    buildName(user),
-                    NumbersWidget(),
+                    buildName(_user),
+                    NumbersWidget(co2: _user.co2saved!, km: _user.km!),
                   ],
                 )
             );// your widget

@@ -1,18 +1,20 @@
 import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-class ProfileWidget extends StatelessWidget {
-  final String imagePath;
-  final bool isEdit;
+class ProfileWidget extends StatefulWidget {
+  const ProfileWidget({Key? key, required this.onClicked}) : super(key: key);
   final VoidCallback onClicked;
 
-  const ProfileWidget({
-    Key? key,
-    required this.imagePath,
-    this.isEdit = false,
-    required this.onClicked,
-  }) : super(key: key);
+  @override
+  State<ProfileWidget> createState() => _ProfileWidgetState();
+}
+
+class _ProfileWidgetState extends State<ProfileWidget> {
+  late String imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,8 @@ class ProfileWidget extends StatelessWidget {
   }
 
   Widget buildImage() {
-    final image = NetworkImage(imagePath);
+    //TODO change this and get it from storage
+    final image = NetworkImage('https://www.kindpng.com/picc/m/24-248253_user-profile-default-image-png-clipart-png-download.png');
 
     return ClipOval(
       child: Material(
@@ -43,25 +46,26 @@ class ProfileWidget extends StatelessWidget {
           fit: BoxFit.cover,
           width: 128,
           height: 128,
-          child: InkWell(onTap: onClicked),
+          //child: InkWell(onTap: onClicked),
         ),
       ),
     );
   }
 
   Widget buildEditIcon(Color color) => buildCircle(
-    color: Colors.white,
-    all: 3,
-    child: buildCircle(
-      color: color,
-      all: 8,
-      child: Icon(
-       isEdit ? Icons.add_a_photo : Icons.edit,
         color: Colors.white,
-        size: 20,
-      ),
-    ),
-  );
+        all: 3,
+        child: buildCircle(
+          color: color,
+          all: 8,
+          child: const Icon(
+            Icons.add_a_photo,
+            color: Colors.white,
+            size: 20,
+
+          ),
+        ),
+      );
 
   Widget buildCircle({
     required Widget child,
