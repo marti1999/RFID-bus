@@ -20,7 +20,7 @@ class Home extends StatefulWidget {
 
 class _MyHomePageState extends State<Home> {
   int _counter = 0;
-  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm(), ProfilePage()];
+  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm(), ProfilePage(), RealtimeDashboard(title: 'Realtime Dashboard')];
   int body_widget_index = 0;
 
   final AuthService _auth = AuthService();
@@ -99,21 +99,20 @@ class _MyHomePageState extends State<Home> {
               leading: Icon(Icons.add_location),
               onTap: (){
                 setState(() {
-                  body_widget_index = 2;
+                  body_widget_index = 3;
                   Navigator.pop(context);
                 });
               },
             ),
             ListTile(
-              title: Text("log out"),
+              title: Text("Log Out"),
                 leading: Icon(Icons.logout),
               onTap: () async {
                 await _auth.signOut();
               },
             ),
-            ListTile(
+            const ListTile(
               title: Text("Version App 0.0.1"),
-
             ),
           ],
         )

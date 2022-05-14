@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:rfid_hackaton/models/bus_stop.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import '../models/bus_real_data.dart';
@@ -11,17 +12,18 @@ import '../services/map_service.dart';
 import '../services/realtime_database.dart';
 
 class BusView extends StatefulWidget {
-  const BusView({Key? key, required this.title, this.origin, this.destination, this.polylines, this.polylineCoordinates, this.markers, this.destinationName, this.originName}) : super(key: key);
+  const BusView({Key? key, required this.title, this.polylines, this.polylineCoordinates, this.markers, this.origin, this.destination, this.linesToUse}) : super(key: key);
 
   final String title;
-  final LatLng? origin;
-  final LatLng? destination;
+
+  final BusStop? origin;
+  final BusStop? destination;
+
+  final List<String>? linesToUse;
   final List<LatLng>? polylineCoordinates;
   final Map<PolylineId, Polyline>? polylines;
   final Map<MarkerId, Marker>? markers;
 
-  final String? originName;
-  final String? destinationName;
 
   @override
   State<BusView> createState() => _BusViewState();
@@ -45,8 +47,6 @@ class _BusViewState extends State<BusView> {
   bool busesSpawned = false;
   bool  _isMapCreated = false;
   bool _followBus = false;
-
-  String _currentBusText = "";
 
   void createPolyLine(List<LatLng> points) {
     final int polylineCount = polylines.length;
@@ -130,16 +130,12 @@ class _BusViewState extends State<BusView> {
   /// It will then call the generateMarker function to add a marker to the map.
   /// Finally, it will call the showMarkerAnimation function to animate the camera to the marker.
   /// This function is called when the user writes a query.
-  Future<void> moveToPossibleBusLocation(int busId, {double zoom = 10.4746}) async {
+  Future<void> moveToPossibleBusLocation(int busId, {double zoom = 14.4746}) async {
     if (busRealTimeData != null && busRealTimeData.isNotEmpty) {
       // get the bus location
       BusRtData busRtData = busRealTimeData[busId]!;
 
-      LatLng busPosition = LatLng(busRtData.busLatitude, busRtData.busLongitude);
-
-      _currentBusText = busPosition.toString();
-      // get the bus location
-
+      LatLng busPosition = LatLng(busRtData.busLineLatitude, busRtData.busLineLongitude);
 
       final GoogleMapController controller = await _controller.future;
 
@@ -214,8 +210,17 @@ class _BusViewState extends State<BusView> {
             print(busJson);
             final parsedJson = jsonDecode(busJson);
             BusRtData busData = BusRtData.fromJson(parsedJson);
-            busRealTimeData[i] = busData;
-            i++;
+
+            if (widget.linesToUse != null) {
+              if (widget.linesToUse!.contains(busData.busLineId)) {  // if the bus is on the line we want to see
+                busRealTimeData[i] = busData;
+                i++;
+              }
+            } else {
+              busRealTimeData[i] = busData;
+              i++;
+            }
+
           }
         }
 
@@ -225,10 +230,12 @@ class _BusViewState extends State<BusView> {
 
   @override
   Widget build(BuildContext context) {
+
     BorderRadiusGeometry radius = BorderRadius.only(
       topLeft: Radius.circular(circularRadius),
       topRight: Radius.circular(circularRadius),
     );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -245,79 +252,110 @@ class _BusViewState extends State<BusView> {
         ],
       ),
       body: SlidingUpPanel(
-        renderPanelSheet: false,
-        collapsed: buildCollapsed(radius, isExpanded: false),
-        panel: buildBottomSheet(radius),
-        body: SlidingUpPanel(
           renderPanelSheet: false,
           borderRadius:  radius,
-          collapsed: buildTopPart(),
+          collapsed: buildTopPartCollapsed(),
           panel: buildTopPart(),
-          body: buildGoogleMaps(context, widget.destination, widget.origin),
+          body: buildBody(context),
           slideDirection: SlideDirection.DOWN,
+          minHeight: MediaQuery.of(context).size.height * 0.15,
+          maxHeight: MediaQuery.of(context).size.height * 0.25,
         ),
-        borderRadius:  radius,
-        controller: _pc,
-        maxHeight: MediaQuery.of(context).size.height * 0.35,
-      ),
+
     );
 
   }
 
-  Widget buildTopPart() {
-    List<Widget> children  = <Widget> [
+  void buildFromTo(List<Widget> children) {
+    children.add(
       Text(
-        "Passengers: ${busRealTimeData[_currentBusIndex]?.busPeopleNumber}",
-        style: const TextStyle(
-          fontWeight: FontWeight.w500,
-          color: Colors.orange,
-        ),
+        'Line: ${busRealTimeData[_currentBusIndex]?.busLineName }',
+        style: const TextStyle(fontSize: 15),
       ),
-      Text(
-        "Current Stop: ${busRealTimeData[_currentBusIndex]?.busStop}",
-        style: const TextStyle(
-          fontWeight: FontWeight.w500,
-          color: Colors.orange,
-        ),
-      ),
-      Text(
-        "Next Stop: ${busRealTimeData[_currentBusIndex]?.busNextStop}",
-        style: const TextStyle(
-          fontWeight: FontWeight.w500,
-          color: Colors.orange,
-        ),
-      ),
-    ];
+    );
 
-    if (widget.originName != null && widget.destinationName != null) {
-      children.add(
+    children.add(
         const Divider(
           color: Colors.orange,
           thickness: 1,
         )
-      );
+    );
 
+    children.add(
+      Text(
+        'From: ${widget.origin!.stopName}',
+        style: const TextStyle(fontSize: 20),
+      ),
+    );
+
+    children.add(
+      Text(
+        'To: ${widget.destination!.stopName}',
+        style: const TextStyle(fontSize: 20),
+      ),
+    );
+  }
+
+  void buildDataText(List<Widget> children, { bool fullInfo = false }) {
+    children.add(
+      Text(
+        "Passengers: ${busRealTimeData[_currentBusIndex]?.busLinePeopleNumber}",
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Colors.orange,
+        ),
+      ),
+    );
+
+    children.add(
+      Text(
+        "Current Stop: ${busRealTimeData[_currentBusIndex]?.busLineCurrentStop.stopName}",
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Colors.orange,
+        ),
+      ),
+    );
+
+    children.add(
+      Text(
+        "Next Stop: ${busRealTimeData[_currentBusIndex]?.busLineNextStop.stopName}",
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Colors.orange,
+        ),
+      )
+    );
+
+    if (fullInfo) {
       children.add(
         Text(
-          'From: ${widget.originName}',
-          style: TextStyle(fontSize: 20),
-        ),
+          "Lat ${busRealTimeData[_currentBusIndex]?.busLineLatitude} Lon ${busRealTimeData[_currentBusIndex]?.busLineLongitude}",
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
+            color: Colors.orange,
+          ),
+        )
       );
+    }
+  }
 
-      children.add(
-        Text(
-          'To: ${widget.destinationName}',
-          style: TextStyle(fontSize: 20),
-        ),
-      );
+
+  Widget buildTopPartCollapsed() {
+    List<Widget> children  = <Widget>[];
+
+    if (widget.origin != null && widget.destination != null) {
+      buildFromTo(children);
+    }else{
+      buildDataText(children);
     }
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.3,
+      height: MediaQuery.of(context).size.height * 1.2,
       width: MediaQuery.of(context).size.width,
       margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(circularRadius),
           bottomRight: Radius.circular(circularRadius),
@@ -326,73 +364,57 @@ class _BusViewState extends State<BusView> {
       child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-
-            ],
+            children: children,
           )),
     );
   }
 
-  Widget buildBody(BuildContext context , LatLng? destination, LatLng? origin) {
+  Widget buildTopPart() {
+
+    List<Widget> children  = <Widget>[];
+
+    buildDataText(children, fullInfo: true);
+
+    if (widget.origin != null && widget.destination != null) {
+      buildFromTo(children);
+    }
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 1.2,
+      width: MediaQuery.of(context).size.width,
+      margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(circularRadius),
+          bottomRight: Radius.circular(circularRadius),
+        ),
+      ),
+      child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: children,
+          )),
+    );
+  }
+
+  Widget buildBody(BuildContext context) {
+
+    LatLng? destination = LatLng(0,0);
+    LatLng? origin = LatLng(0,0);
+
+    if (widget.destination != null || widget.origin != null) {
+      destination = LatLng(widget.destination!.stopLatitude, widget.destination!.stopLongitude);
+      origin = LatLng(widget.origin!.stopLatitude, widget.origin!.stopLongitude);
+    }
+
     return Stack(
       children:
       [
         buildGoogleMaps(context, destination, origin),
         Positioned(
-          top: 0,
-          child:
-          Container(
-            height: MediaQuery.of(context).size.height * 0.5,
-            width: MediaQuery.of(context).size.width,
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(circularRadius),
-                bottomRight: Radius.circular(circularRadius),
-              ),
-            ),
-            child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Passengers: ${busRealTimeData[_currentBusIndex]?.busPeopleNumber}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    Text(
-                      "Current Stop: ${busRealTimeData[_currentBusIndex]?.busStop}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    Text(
-                      "Next Stop: ${busRealTimeData[_currentBusIndex]?.busNextStop}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    Text(
-                      "Current Location: ${busRealTimeData[_currentBusIndex]?.busLatitude}, ${busRealTimeData[_currentBusIndex]?.busLongitude}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    Text(
-                      "Co2: ${busRealTimeData[_currentBusIndex]?.busPeopleNumber}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ],
-                )),
-          ),
+          bottom:  MediaQuery.of(context).size.height * 0.1,
+          child: buildBottomSheet(),
         ),
       ],
     );
@@ -406,20 +428,20 @@ class _BusViewState extends State<BusView> {
       zoom: 14.4746,
     );
 
+
     if (_isMapCreated) {
       for (var busData in busRealTimeData.values) {
         generateBusMarker(
-            busData.busId, busData.busPeopleNumber, busData.busLatitude,
-            busData.busLongitude);
+            busData.busLineId, busData.busLinePeopleNumber, busData.busLineLatitude,
+            busData.busLineLongitude);
+
+
       }
 
       if (_followBus) {
-        moveToPossibleBusLocation(_currentBusIndex, zoom: 14.4746);
+        moveToPossibleBusLocation(_currentBusIndex, zoom: 15.4746);
       }
     }
-
-
-
 
     return GoogleMap(
       zoomControlsEnabled: true,
@@ -431,7 +453,15 @@ class _BusViewState extends State<BusView> {
         _controller.complete(controller);
         setState(() {
           _isMapCreated = true;
-          moveToPossibleBusLocation(0);
+
+          if (polylines != null && polylines.isNotEmpty) {
+            Set<Polyline> polylinesSet = Set<Polyline>.of(
+                polylines.values);
+
+            MapService().zoomToPolyline(_controller, polylinesSet);
+          }else{
+            moveToPossibleBusLocation(_currentBusIndex);
+          }
         });
       },
       onTap: (LatLng latLng) {
@@ -439,7 +469,6 @@ class _BusViewState extends State<BusView> {
       },
     );
   }
-
 
   Widget buildCollapsed(BorderRadiusGeometry radius, { bool isExpanded = false }) {
     return Container(
@@ -463,7 +492,7 @@ class _BusViewState extends State<BusView> {
           Padding(
             padding:  EdgeInsets.only(left: 16.0, right: 16.0, bottom: (!isExpanded) ?  0.0 : 16.0),
             child: const Text(
-              'Your Buses',
+              'Available Bus Lines',
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
@@ -475,17 +504,14 @@ class _BusViewState extends State<BusView> {
     );
   }
 
-  Widget buildBottomSheet(BorderRadiusGeometry radius) {
+  Widget buildBottomSheet() {
     return Column(
       children: <Widget>[
-        buildCollapsed(radius, isExpanded: true),
+        //buildCollapsed(radius, isExpanded: true),
         Container(
           decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(circularRadius),
-                bottomRight: Radius.circular(circularRadius),
-              ),
+              borderRadius: BorderRadius.all(Radius.circular(circularRadius)),
               boxShadow: const [
                 BoxShadow(
                   blurRadius: 20.0,
@@ -493,14 +519,13 @@ class _BusViewState extends State<BusView> {
                 ),
               ]
           ),
-          padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 14.0),
+          padding: const EdgeInsets.fromLTRB(10.0, 0.0, 10.0, 14.0),
           margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 14.0),
           child:
           Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children:  <Widget>[
-              const SizedBox(height: 10.0),
-
+              const SizedBox(height: 5.0),
               if (busRealTimeData.isNotEmpty)
                 _itemRow(context),
               if (busRealTimeData.isEmpty)
@@ -519,7 +544,7 @@ class _BusViewState extends State<BusView> {
     return SizedBox(
         height: 100,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
             // button with left arrow
             TextButton(
@@ -529,7 +554,7 @@ class _BusViewState extends State<BusView> {
                 }),
                 moveToPossibleBusLocation(_currentBusIndex),
               },
-              child: const Icon(Icons.arrow_back_ios, size: 30, color: Colors.blue,),
+              child: const Icon(Icons.arrow_back_ios, size: 25, color: Colors.blue,),
             ),
 
             _itemBuilder(context, _currentBusIndex),
@@ -542,7 +567,7 @@ class _BusViewState extends State<BusView> {
 
                 moveToPossibleBusLocation(_currentBusIndex),
               },
-              child: const Icon(Icons.arrow_forward_ios, size: 30, color: Colors.blue,),
+              child: const Icon(Icons.arrow_forward_ios, size: 25, color: Colors.blue,),
             ),
           ],
         )
@@ -551,45 +576,16 @@ class _BusViewState extends State<BusView> {
 
   Widget _itemBuilder(BuildContext context, int index) {
     return InkWell(
-        child: Card(
-          elevation: 10,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(circularRadius),
-          ),
-          child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.35,
-              height: 100,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Text(
-                    "Bus ${busRealTimeData[index]!.busLine}",
+        child:  Center(
+              child: Text(
+                    "Bus ${busRealTimeData[index]!.busLineName}",
                     style: const TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),
-                  ),
-                  Text(
-                    "Current Location: ${busRealTimeData[_currentBusIndex]?.busLatitude}, ${busRealTimeData[_currentBusIndex]?.busLongitude}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.orange,
-                    ),
-                  ),
-                ],
-              )
-
-
-          ),
+              ),
         ),
-        onTap: () {
-          // setState(() {
-          //   _selectedIndex = index;
-          // });
-        }
     );
   }
 

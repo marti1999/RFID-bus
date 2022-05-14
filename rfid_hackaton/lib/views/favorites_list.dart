@@ -131,7 +131,7 @@ class _FavoritesListState extends State<FavoritesList> {
         color: Theme.of(context).backgroundColor,
         borderRadius: radius,
       ),
-      margin: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0.0),
+      margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 0.0),
       height: isExpanded ? 100.0 : 200.0,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
