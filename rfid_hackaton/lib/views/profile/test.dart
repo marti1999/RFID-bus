@@ -29,15 +29,9 @@ class _HomePageState extends State<HomePage> {
           maxWidth: 1920);
 
       // final String fileName = path.basename(pickedImage!.path);
+      // TODO: modificar el nom per tal que tingui el uid de l'usuari
       final String fileName = 'YfY0jrDouVVCfkMCl21aOSJvjpf2'+'.jpg';
       File imageFile = File(pickedImage!.path);
-      // var p = imageFile.path;
-      // var lastSeparator = p.lastIndexOf(Platform.pathSeparator);
-      //
-      // var newPath = p.substring(0, lastSeparator+1)+'YfY0jrDouVVCfkMCl21aOSJvjpf2' + '.jpg';
-      // imageFile = imageFile.renameSync(newPath);
-
-
 
       try {
         // Uploading the selected image with some custom meta data

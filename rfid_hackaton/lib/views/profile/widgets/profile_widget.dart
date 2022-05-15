@@ -44,7 +44,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   }
 
   Widget buildImage() {
-    //TODO change this and get it from storage
 
     return ClipOval(
       child: Material(
