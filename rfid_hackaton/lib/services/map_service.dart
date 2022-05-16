@@ -15,7 +15,7 @@ showAlertDialog(BuildContext context , String message) {
 
   // set up the AlertDialog
   AlertDialog alert = AlertDialog(
-    title: const Text("My title"),
+    title: const Text("Error"),
     content: Text(message),
     actions: [
       okButton,

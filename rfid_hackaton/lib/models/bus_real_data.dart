@@ -10,7 +10,7 @@ class BusRtData {
   final double busLineLatitude;
   final double busLineLongitude;
   final List<String> busLineRoute;
-  final int currentStopIndex;
+  //final int currentStopIndex;
 
   BusRtData({
     required this.busLineId,
@@ -21,30 +21,29 @@ class BusRtData {
     required this.busLineLatitude,
     required this.busLineLongitude,
     required this.busLineRoute,
-    required this.currentStopIndex,
   });
 
   BusRtData.fromJson(Map<dynamic, dynamic> json)
-      : busLineId = json['line_id'] as String,
-        busLineName = json['line_name'] as String,
-        busLineNextStop = BusStop.fromJson(json['next_stop']),
-        busLineCurrentStop = BusStop.fromJson(json['stop']),
-        busLinePeopleNumber = json['people_number'] as int,
-        busLineLatitude = json['lat'] as double,
-        busLineLongitude = json['lng'] as double,
-        busLineRoute = (json['stops'] as List<dynamic>).cast<String>(),
-        currentStopIndex = json['current_stop_index'] as int;
+      : busLineId = json['busLineId'] as String,
+        busLineName = json['busLineName'] as String,
+        busLineNextStop = BusStop.fromJson(json['busLineNextStop']),
+        busLineCurrentStop = BusStop.fromJson(json['busLineCurrentStop']),
+        busLinePeopleNumber = json['busLinePeopleNumber'] as int,
+        busLineLatitude = json['busLineLatitude'] as double,
+        busLineLongitude = json['busLineLongitude'] as double,
+        busLineRoute = (json['busLineRoute'] as List<dynamic>).cast<String>();
+        //currentStopIndex = json['currentStopIndex'] as int;
 
 
   Map<dynamic, dynamic> toJson() => <dynamic, dynamic>{
-    'line_id': busLineId,
-    'line_name': busLineName,
-    'next_stop': busLineNextStop.toJson(),
-    'stop': busLineCurrentStop.toJson(),
-    'people_number': busLinePeopleNumber,
-    'lat': busLineLatitude,
-    'lng': busLineLongitude,
-    'stops': busLineRoute,
-    'current_stop_index': currentStopIndex,
+    'busLineId': busLineId,
+        'busLineName': busLineName,
+        'busLineNextStop': busLineNextStop,
+        'busLineCurrentStop': busLineCurrentStop,
+        'busLinePeopleNumber': busLinePeopleNumber,
+        'busLineLatitude': busLineLatitude,
+        'busLineLongitude': busLineLongitude,
+        'busLineRoute': busLineRoute,
+        'currentStopIndex': currentStopIndex,
   };
 }

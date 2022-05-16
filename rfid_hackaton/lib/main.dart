@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:rfid_hackaton/models/my_user.dart';
@@ -8,6 +9,8 @@ import 'package:rfid_hackaton/views/wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setEnabledSystemUIOverlays([]); // hide status bar
 
   await Firebase.initializeApp(
     options: FirebaseOptions(

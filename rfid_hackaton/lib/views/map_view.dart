@@ -56,8 +56,6 @@ class _MapViewState extends State<MapView> {
   bool locationSet = false;
   bool destinationSet = false;
 
-  //PolylinePoints polylinePoints = PolylinePoints();
-
   final List<BusStop> _busStops = [];
   final List<BusRtData> _busLines = [];
 
@@ -89,18 +87,27 @@ class _MapViewState extends State<MapView> {
     BusStop busStopDestination = getBusStop(_destination);
 
 
-    Map<String, List<LatLng>> possibleRoutes =  GpsService().getRouteBetweenCoordinates(busStopOrigin, busStopDestination, _busStops, _busLines);
+    Map<String, List<BusStop>> possibleRoutes =  GpsService().getRouteBetweenCoordinates(busStopOrigin, busStopDestination, _busStops, _busLines);
 
     if (possibleRoutes.isNotEmpty) {
       for (String route in possibleRoutes.keys) {
         setState(() {
-          List<LatLng>? routeCoordinates = possibleRoutes[route];
-          polylinesCoords[route] = routeCoordinates!;
+          List<LatLng> routeCoordinates  = [];
+
+          for (int i = 0; i < possibleRoutes[route]!.length; i++) {
+
+            BusStop busStop = possibleRoutes[route]![i];
+
+            LatLng coord = LatLng(busStop.stopLatitude, busStop.stopLongitude);
+
+            generateMarker(route, route, coord.latitude, coord.longitude, false);
+            routeCoordinates.add(coord);
+          }
+
+          polylinesCoords[route] = routeCoordinates;
           linesToUse.add(route);
           createPolyLine(routeCoordinates);
-          for (LatLng coord in routeCoordinates!) {
-            generateMarker(route, route, coord.latitude, coord.longitude, false);
-          }
+
         });
       }
       return true;
@@ -139,7 +146,7 @@ class _MapViewState extends State<MapView> {
   }
 
   /// This generates a marker for the map.
-  void generateMarker(String address, String title, double lat, double lng, bool isDestination) {
+  Future<void> generateMarker(String address, String title, double lat, double lng, bool isDestination) async {
     final MarkerId markerId = MarkerId(address);
 
     final Marker marker = Marker(
@@ -151,6 +158,8 @@ class _MapViewState extends State<MapView> {
       },
       icon: isDestination ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed) : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
     );
+
+
 
     setState(() {
       // adding a new marker to map
@@ -628,7 +637,15 @@ class _MapViewState extends State<MapView> {
 
       LatLng latLng = LatLng (busStop.stopLatitude, busStop.stopLongitude);
 
-      //updateMapLocation(latLng);
+      if (!isDestination && originBusStop != null && originBusStop!.stopId == busStop.stopId) {
+        MapService().showAlertDialog(context, "You can't set the same origin and destination");
+        return false;
+      }
+
+      if (isDestination && busStop.stopId == originBusStop!.stopId) {
+        MapService().showAlertDialog(context, "You can't go to the same stop as the origin");
+        return false;
+      }
 
       setState(() {
         if (isDestination) {

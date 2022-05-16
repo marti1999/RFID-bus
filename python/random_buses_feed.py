@@ -84,16 +84,17 @@ class BusLine:
 
     def to_json(self):
         return {
-            'line_id': self.line_id,
-            'line_name': self.line_name,
-            'current_stop_index': self.current_stop_index,
-            'stop': self.stop.to_json(),
-            'next_stop': self.next_stop.to_json(),
-            'stops': [stop.id for stop in self.stops],
-            'lat': float(self.lat),
-            'lng': float(self.lng),
-            'people_number': self.people_number
-        }
+                'busLineId': self.line_id,
+                'busLineName': self.line_name, 
+                'busLinePeopleNumber': self.people_number, 
+                'busLineLatitude': float(self.lat), 
+                'busLineLongitude': float(self.lng),
+                'busLineCurrentStop': self.stop.name,
+                'busLineNextStop': self.next_stop.name,
+                'busLineNextStopLatitude': self.next_stop.lat,
+                'busLineNextStopLongitude': self.next_stop.lng,
+                'busLineRoute':  [stop.id for stop in self.stops]
+            }
 
 
     def add_distance(self, lat, lng, az, dist):
@@ -131,19 +132,7 @@ class BusLine:
         self.update_bus() # Update the bus position in the database
 
     def update_bus(self):
-        ref.child(self.line_id).set(
-            {
-                'busId': self.line_id,
-                'busLine': self.line_name, 
-                'busPeopleNumber': self.people_number, 
-                'busLatitude': float(self.lat), 
-                'busLongitude': float(self.lng),
-                'busStop': self.stop.name,
-                'busNextStop': self.next_stop.name,
-                'busNextStopLatitude': self.next_stop.lat,
-                'busNextStopLongitude': self.next_stop.lng
-                
-            })
+        ref.child(self.line_id).set(self.to_json())
 
 
 UAB_STOPS_ENDPOINT = "http://appbuses.accessibilitat-transports.uab.cat/?mod=linesviewer&page=lines_viewer_getmapdata&json=1"

@@ -162,8 +162,9 @@ class GpsService {
     return _busLines;
   }
 
-  void _calculateBusTransfer(Map<String, List<LatLng>> routes, BusStop origin, BusStop destination, List<BusStop> busStops, List<BusRtData> _busLines) {
-    // get a bus line where origin is in it and there is a bus stop that allows you to go to anotgher bus line that has the destination
+  void _calculateBusTransfer(Map<String, List<BusStop>> routes, BusStop origin, BusStop destination, List<BusStop> busStops, List<BusRtData> _busLines) {
+    // get a bus line where origin is in it and there is a bus stop that
+    // allows you to go to anotgher bus line that has the destination
 
     List<BusRtData> _originPossibleLines = getBusLinesByStopId(origin.stopId, _busLines);
 
@@ -173,22 +174,53 @@ class GpsService {
     //  find cicles that have the origin and destination
     List<BusRtData> _originDestinationLines = [];
 
+
+    // find all the lines that have the origin and destination
     for (var i = 0; i < _originPossibleLines.length; i++) {
-      var busLine = _originPossibleLines[i];
+      var originLine = _originPossibleLines[i];
 
-      bool stopFound = busLine.busLineRoute.contains(destination.stopId);
+      for (var j = 0; j < _destinationPossibleLines.length; j++) {
+        var destinationLine = _destinationPossibleLines[j];
 
-      if (stopFound) {
-        _originDestinationLines.add(busLine);
+        // check if originLine.busLineRoute contains any of the destinationLine.busLineRoute
+        bool contains = false;
+
+        for (var k = 0; k < destinationLine.busLineRoute.length; k++) {
+          var destinationStop = destinationLine.busLineRoute[k];
+
+          if (originLine.busLineRoute.contains(destinationStop)) {
+            contains = true;
+            break;
+          }
+        }
+
+        if (contains) {
+          _originDestinationLines.add(originLine);
+        }
+      }
+    }
+
+    for (var j = 0; j < _originDestinationLines.length; j++) {
+      var busLine = _originDestinationLines[j];
+
+      for (var i = 0; i < busStops.length; i++) {
+        BusStop busStop = busStops[i];
+        bool busLineFound = busLine.busLineRoute.contains(busStop.stopId);
+
+
+        if (busLineFound) {
+          routes[busLine.busLineId]?.add(
+              busStop);
+        }
       }
     }
 
   }
 
-  Map<String, List<LatLng>> getRouteBetweenCoordinates(BusStop origin, BusStop destination, List<BusStop> busStops, List<BusRtData> _busLines) {
+  Map<String, List<BusStop>> getRouteBetweenCoordinates(BusStop origin, BusStop destination, List<BusStop> busStops, List<BusRtData> _busLines) {
     /* With the origin and destination coordinates, and the list of bus stops, we can now find the shortest path between the two points. */
 
-    Map<String, List<LatLng>> routes = <String, List<LatLng>>{};
+    Map<String, List<BusStop>> routes = <String, List<BusStop>>{};
 
     List<BusRtData> busLinesCopy  = [..._busLines];
 
@@ -200,9 +232,9 @@ class GpsService {
       bool destinationFound = busLine.busLineRoute.contains(destination.stopId);
 
       if (originFound && destinationFound) {
-        routes[busLine.busLineId] = <LatLng>[];
-        routes[busLine.busLineId]!.add(LatLng(origin.stopLatitude, origin.stopLongitude));
-        routes[busLine.busLineId]!.add(LatLng(destination.stopLatitude, destination.stopLongitude));
+        routes[busLine.busLineId] = <BusStop>[];
+        routes[busLine.busLineId]!.add(origin);
+        routes[busLine.busLineId]!.add(destination);
       }else{
         busLinesCopy.remove(busLine);
       }
@@ -216,13 +248,13 @@ class GpsService {
         var busLine = busLinesCopy[j];
 
         for (var i = 0; i < busStops.length; i++) {
-          var busStop = busStops[i];
+          BusStop busStop = busStops[i];
           bool busLineFound = busLine.busLineRoute.contains(busStop.stopId);
 
 
           if (busLineFound) {
             routes[busLine.busLineId]?.add(
-                LatLng(busStop.stopLatitude, busStop.stopLongitude));
+                busStop);
           }
         }
       }
