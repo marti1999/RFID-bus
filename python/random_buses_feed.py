@@ -89,8 +89,8 @@ class BusLine:
                 'busLinePeopleNumber': self.people_number, 
                 'busLineLatitude': float(self.lat), 
                 'busLineLongitude': float(self.lng),
-                'busLineCurrentStop': str(self.stop.to_json()),
-                'busLineNextStop': str(self.next_stop.to_json()),
+                'busLineCurrentStop': self.stop.to_json(),
+                'busLineNextStop': self.next_stop.to_json(),
                 'busLineRoute':  [stop.id for stop in self.stops]
             }
 

@@ -12,15 +12,15 @@ class BusStop {
   });
 
   BusStop.fromJson(Map<dynamic, dynamic> json)
-      : stopId = json['id'] as String,
-        stopName = json['name'] as String,
-        stopLatitude = json['lat'] as double,
-        stopLongitude = json['lng'] as double;
+      : stopId = json['stopId'] as String,
+        stopName = json['stopName'] as String,
+        stopLatitude = json['stopLatitude'] as double,
+        stopLongitude = json['stopLongitude'] as double;
 
   Map<dynamic, dynamic> toJson() => <dynamic, dynamic>{
-    'id': stopId,
-    'name': stopName,
-    'lat': stopLatitude,
-    'lng': stopLongitude,
+    'stopId': stopId,
+    'stopName': stopName,
+    'stopLatitude': stopLatitude,
+    'stopLongitude': stopLongitude,
   };
 }

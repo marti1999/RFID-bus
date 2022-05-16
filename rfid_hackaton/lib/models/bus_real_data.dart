@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rfid_hackaton/models/bus_stop.dart';
 
@@ -26,14 +28,12 @@ class BusRtData {
   BusRtData.fromJson(Map<dynamic, dynamic> json)
       : busLineId = json['busLineId'] as String,
         busLineName = json['busLineName'] as String,
-        busLineNextStop = BusStop.fromJson(json['busLineNextStop']),
-        busLineCurrentStop = BusStop.fromJson(json['busLineCurrentStop']),
         busLinePeopleNumber = json['busLinePeopleNumber'] as int,
         busLineLatitude = json['busLineLatitude'] as double,
         busLineLongitude = json['busLineLongitude'] as double,
-        busLineRoute = (json['busLineRoute'] as List<dynamic>).cast<String>();
-        //currentStopIndex = json['currentStopIndex'] as int;
-
+        busLineRoute = (json['busLineRoute'] as List<dynamic>).cast<String>(),
+        busLineNextStop = BusStop.fromJson(jsonDecode(json['busLineNextStop'])),
+        busLineCurrentStop = BusStop.fromJson(jsonDecode(json['busLineCurrentStop']));
 
   Map<dynamic, dynamic> toJson() => <dynamic, dynamic>{
     'busLineId': busLineId,

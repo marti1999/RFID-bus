@@ -314,6 +314,7 @@ class _MapViewState extends State<MapView> {
         // convert to json
         var busJson = json.encode(bus);
         print(busJson);
+
         final parsedJson = jsonDecode(busJson);
         BusRtData busData = BusRtData.fromJson(parsedJson);
         _busLines.add(busData);
