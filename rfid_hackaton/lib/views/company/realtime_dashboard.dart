@@ -36,7 +36,7 @@ class _RealtimeDashboardState extends State<RealtimeDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return BusView(title: widget.title,);
+    return BusView(title: widget.title, isClient: false,);
   }
 
 

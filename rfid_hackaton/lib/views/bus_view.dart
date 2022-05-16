@@ -12,7 +12,7 @@ import '../services/map_service.dart';
 import '../services/realtime_database.dart';
 
 class BusView extends StatefulWidget {
-  const BusView({Key? key, required this.title, this.polylines, this.polylineCoordinates, this.markers, this.origin, this.destination, this.linesToUse}) : super(key: key);
+  const BusView({Key? key, required this.title, required this.isClient, this.polylines,  this.markers, this.origin, this.destination, this.linesToUse}) : super(key: key);
 
   final String title;
 
@@ -20,10 +20,10 @@ class BusView extends StatefulWidget {
   final BusStop? destination;
 
   final List<String>? linesToUse;
-  final List<LatLng>? polylineCoordinates;
   final Map<PolylineId, Polyline>? polylines;
   final Map<MarkerId, Marker>? markers;
 
+  final bool isClient;
 
   @override
   State<BusView> createState() => _BusViewState();
@@ -268,13 +268,6 @@ class _BusViewState extends State<BusView> {
 
   void buildFromTo(List<Widget> children) {
     children.add(
-      Text(
-        'Line: ${busRealTimeData[_currentBusIndex]?.busLineName }',
-        style: const TextStyle(fontSize: 15),
-      ),
-    );
-
-    children.add(
         const Divider(
           color: Colors.orange,
           thickness: 1,
@@ -297,7 +290,8 @@ class _BusViewState extends State<BusView> {
   }
 
   void buildDataText(List<Widget> children, { bool fullInfo = false }) {
-    children.add(
+
+    /*children.add(
       Text(
         "Passengers: ${busRealTimeData[_currentBusIndex]?.busLinePeopleNumber}",
         style: const TextStyle(
@@ -305,7 +299,7 @@ class _BusViewState extends State<BusView> {
           color: Colors.orange,
         ),
       ),
-    );
+    );*/
 
     children.add(
       Text(
@@ -327,7 +321,7 @@ class _BusViewState extends State<BusView> {
       )
     );
 
-    if (fullInfo) {
+    if (fullInfo == true && !widget.isClient) {
       children.add(
         Text(
           "Lat ${busRealTimeData[_currentBusIndex]?.busLineLatitude} Lon ${busRealTimeData[_currentBusIndex]?.busLineLongitude}",
@@ -375,7 +369,7 @@ class _BusViewState extends State<BusView> {
 
     buildDataText(children, fullInfo: true);
 
-    if (widget.origin != null && widget.destination != null) {
+    if (widget.origin != null && widget.destination != null && widget.isClient) {
       buildFromTo(children);
     }
 
@@ -575,16 +569,62 @@ class _BusViewState extends State<BusView> {
   }
 
   Widget _itemBuilder(BuildContext context, int index) {
+    if (busRealTimeData.isEmpty) {
+      return const Center(
+        child: Text('No buses found'),
+      );
+    }
+
+    if (index >= busRealTimeData.length) {
+      return const Center(
+        child: Text('No buses found'),
+      );
+    }
+
     return InkWell(
         child:  Center(
-              child: Text(
-                    "Bus ${busRealTimeData[index]!.busLineName}",
+              child: Column(
+                children: <Widget>[
+                  Text(
+                    "Bus Line: ${busRealTimeData[index]!.busLineName}",
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),
-              ),
+                  ),
+
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        const WidgetSpan(
+                          child: Icon(Icons.emoji_people_outlined , size: 30),
+                        ),
+                        TextSpan(
+                          text:  busRealTimeData[index]!.busLinePeopleNumber.toString(),
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Text(
+                    "Next Bus: ${busRealTimeData[index]!.nextBusTime}",
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+
+              )
+
         ),
     );
   }

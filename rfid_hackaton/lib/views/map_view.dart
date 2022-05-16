@@ -40,7 +40,7 @@ class _MapViewState extends State<MapView> {
   int _polylineIdCounter = 0;
 
   List<String> linesToUse = [];
-  List<LatLng> polylineCoordinates = [];
+  //List<LatLng> polylineCoordinates = [];
 
   String _location = "";
   String _destination = "";
@@ -327,6 +327,13 @@ class _MapViewState extends State<MapView> {
   void initState() {
     super.initState();
 
+    if (polylines.isNotEmpty) {
+      setState(() {
+        polylines.clear();
+        linesToUse.clear();
+      });
+    }
+
     dbService.getBusStopsStream().get().then((value) =>
         value.docs.forEach((doc) =>
             setState(() {
@@ -356,7 +363,6 @@ class _MapViewState extends State<MapView> {
       topLeft: Radius.circular(circularRadius),
       topRight: Radius.circular(circularRadius),
     );
-
 
     return DefaultTextStyle(
       style: Theme.of(context).textTheme.headline2!,
@@ -619,7 +625,7 @@ class _MapViewState extends State<MapView> {
         Navigator.push(context, MaterialPageRoute(builder: (
             context) =>
             BusView(title: 'Bus Routes',
-              polylineCoordinates: polylineCoordinates,
+              isClient : true,
               origin: originBusStop,
               destination: destinationBusStop,
               polylines: polylines,
@@ -655,6 +661,9 @@ class _MapViewState extends State<MapView> {
           destinationSet = true;
 
           destinationBusStop = busStop;
+
+          polylines.clear();
+          linesToUse.clear();
         } else {
           _location = location;
           _locationLatLng = latLng;

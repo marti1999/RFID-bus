@@ -72,6 +72,11 @@ class BusLine:
         self.lat = Decimal(self.stop.lat)
         self.lng = Decimal(self.stop.lng)
 
+        # list of strings with times from 8:00 to 20:00 in 15 minutes intervals
+        self.bus_times = ["8:00", "8:15", "8:30", "8:45", "9:00", "9:15", "9:30", "9:45", "10:00", "10:15", "10:30", "10:45", "11:00", "11:15", "11:30", "11:45", "12:00", "12:15", "12:30", "12:45", "13:00", "13:15", "13:30", "13:45", "14:00", "14:15", "14:30", "14:45", "15:00", "15:15", "15:30", "15:45", "16:00", "16:15", "16:30", "16:45", "17:00", "17:15", "17:30", "17:45", "18:00", "18:15", "18:30", "18:45", "19:00", "19:15", "19:30", "19:45", "20:00"]
+
+        self.next_bus_time = 0
+
         print(f"{self.line_id} {self.line_name} {self.stop} {self.lat} {self.lng}")
 
         self.people_number = random.randint(100, 200) # Random number between 100 and 200
@@ -91,7 +96,8 @@ class BusLine:
                 'busLineLongitude': float(self.lng),
                 'busLineCurrentStop': self.stop.to_json(),
                 'busLineNextStop': self.next_stop.to_json(),
-                'busLineRoute':  [stop.id for stop in self.stops]
+                'busLineRoute':  [stop.id for stop in self.stops],
+                'busLineNextBusTime':  self.bus_times[self.next_bus_time],
             }
 
 
@@ -127,7 +133,16 @@ class BusLine:
             self.current_stop_index = 0
 
         self.next_stop = self.stops[self.current_stop_index] # Update the next stop
+        
+        # get the next bus time
+        self.next_bus_time += 1
+        if self.next_bus_time >= len(self.bus_times):
+            self.next_bus_time = 0
+            
         self.update_bus() # Update the bus position in the database
+
+        
+        
 
     def update_bus(self):
         ref.child(self.line_id).set(self.to_json())
