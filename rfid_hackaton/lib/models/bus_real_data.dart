@@ -44,6 +44,5 @@ class BusRtData {
         'busLineLatitude': busLineLatitude,
         'busLineLongitude': busLineLongitude,
         'busLineRoute': busLineRoute,
-        'currentStopIndex': currentStopIndex,
   };
 }

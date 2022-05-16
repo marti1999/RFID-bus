@@ -48,10 +48,10 @@ class Stop:
     
     def to_json(self):
         return {
-            'id': self.id,
-            'name': self.name,
-            'lat': self.lat,
-            'lng': self.lng
+            'stopId': self.id,
+            'stopName': self.name,
+            'stopLatitude': self.lat,
+            'stopLongitude': self.lng
         }
 
 class BusLine:
@@ -89,10 +89,8 @@ class BusLine:
                 'busLinePeopleNumber': self.people_number, 
                 'busLineLatitude': float(self.lat), 
                 'busLineLongitude': float(self.lng),
-                'busLineCurrentStop': self.stop.name,
-                'busLineNextStop': self.next_stop.name,
-                'busLineNextStopLatitude': self.next_stop.lat,
-                'busLineNextStopLongitude': self.next_stop.lng,
+                'busLineCurrentStop': str(self.stop.to_json()),
+                'busLineNextStop': str(self.next_stop.to_json()),
                 'busLineRoute':  [stop.id for stop in self.stops]
             }
 
