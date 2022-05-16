@@ -3,7 +3,8 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from firebase_admin import db
-
+import os
+import json
 import random
 from time import sleep
 from random import uniform
@@ -149,14 +150,32 @@ UAB_STOPS_ENDPOINT = "http://appbuses.accessibilitat-transports.uab.cat/?mod=lin
 UAB_LINE_STOPS_ENDPOINT = "http://appbuses.accessibilitat-transports.uab.cat/?mod=linesviewer&page=lines_viewer_busstop&ajax=1"
 
 def read_bus_data():
+    if os.path.exists('uab_bus_data.json'):
+        print("Loading UAB bus data from file")
+        with open('uab_bus_data.json', 'r') as f:
+            data = json.load(f)
+        return data['parades'], data['linies']
+
     # make a request to the endpoint
     response = requests.get(UAB_STOPS_ENDPOINT)
     # parse the response
     data = response.json()
+
+    # save the data to a file
+    with open('uab_bus_data.json', 'w') as f:
+        json.dump(data, f)
+
     # return the data
     return data['parades'], data['linies']
 
 def get_lines_stop(data):
+    if os.path.exists('uab_bus_line_data.json'):
+        print("Loading data from file")
+        with open('uab_bus_line_data.json', 'r') as f:
+            data = json.load(f)
+        return data
+
+    
     lines = {}
 
     for linia in data:
@@ -177,6 +196,9 @@ def get_lines_stop(data):
             idparada = stop['idparada']
             
             lines[linia['IdLinia']].append(idparada)
+
+    with open('uab_bus_line_data.json', 'w') as f:
+        json.dump(lines, f)
 
     return lines
 
