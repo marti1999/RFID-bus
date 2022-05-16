@@ -6,6 +6,10 @@ import 'package:rfid_hackaton/views/profile/utils/user_preferences.dart';
 import 'package:rfid_hackaton/views/profile/widgets/appbar_widget.dart';
 import 'package:rfid_hackaton/views/profile/widgets/numbers_widget.dart';
 import 'package:rfid_hackaton/views/profile/widgets/profile_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rfid_hackaton/services/database.dart';
+
+
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -14,29 +18,40 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
+String _userid = '';
+MyUser _user = MyUser(km: null);
+
 class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
-    final user = UserPreferences.user;
-    return Scaffold(
-      appBar: buildAppBar(context),
-      body: ListView(
-        physics: BouncingScrollPhysics(),
-          children: [
-            ProfileWidget(
-                imagePath: user.imagePath!,
-                onClicked: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => EditProfilePage())
-                  );
-                }
-            ),
-            const SizedBox(height: 24),
-            buildName(user),
-            NumbersWidget(),
-          ],
-      )
-    );
+    return FutureBuilder(
+        future: _getCurrentUser(),
+        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+          if (snapshot.hasData) {
+
+
+            return Scaffold(
+                appBar: buildAppBar(context),
+                body: ListView(
+                  physics: BouncingScrollPhysics(),
+                  children: [
+                    ProfileWidget(
+
+                        onClicked: () {
+                          // Navigator.of(context).push(
+                          //     MaterialPageRoute(builder: (context) => EditProfilePage())
+                          // );
+                        }
+                    ),
+                    const SizedBox(height: 24),
+                    buildName(_user),
+                    NumbersWidget(co2: _user.co2saved!, km: _user.km!),
+                  ],
+                )
+            );// your widget
+        } else return CircularProgressIndicator();
+        });
+
   }
 }
 Widget buildName(MyUser user) => Column(
@@ -52,3 +67,12 @@ Widget buildName(MyUser user) => Column(
     )
   ],
 );
+
+
+
+Future<String> _getCurrentUser() async{
+  final prefs = await SharedPreferences.getInstance();
+  _userid = prefs.getString('uid') ?? '';
+  _user = await DatabaseService(userID: _userid).getUserByUID(_userid);
+  return _userid;
+}

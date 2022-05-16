@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:rfid_hackaton/services/auth.dart';
 import 'package:rfid_hackaton/views/feedback/feedback_form.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
+import 'package:rfid_hackaton/views/profile/test.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';
 
@@ -20,7 +21,7 @@ class Home extends StatefulWidget {
 
 class _MyHomePageState extends State<Home> {
   int _counter = 0;
-  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm(), ProfilePage(), RealtimeDashboard(title: 'Realtime Dashboard')];
+  List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm(), ProfilePage(), RealtimeDashboard(title: 'Realtime Dashboard'), HomePage()];
   int body_widget_index = 0;
 
   final AuthService _auth = AuthService();
@@ -78,10 +79,13 @@ class _MyHomePageState extends State<Home> {
               },
             ),
             ListTile(
-              title: Text("add user test"),
+              title: Text("upload image test"),
               leading: Icon(Icons.create_new_folder),
               onTap: (){
-                // addUserTest('15', 'marti', 34);
+                setState(() {
+                  body_widget_index = 4;
+                  Navigator.pop(context);
+                });
               },
             ),
             ListTile(
