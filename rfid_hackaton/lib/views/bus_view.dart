@@ -499,10 +499,8 @@ class _BusViewState extends State<BusView> {
   }
 
   Widget buildBottomSheet() {
-    return Column(
-      children: <Widget>[
-        //buildCollapsed(radius, isExpanded: true),
-        Container(
+    return Center(
+        child: Container(
           decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.all(Radius.circular(circularRadius)),
@@ -513,32 +511,18 @@ class _BusViewState extends State<BusView> {
                 ),
               ]
           ),
-          padding: const EdgeInsets.fromLTRB(10.0, 0.0, 10.0, 14.0),
-          margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 14.0),
-          child:
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children:  <Widget>[
-              const SizedBox(height: 5.0),
-              if (busRealTimeData.isNotEmpty)
-                _itemRow(context),
-              if (busRealTimeData.isEmpty)
-                const Center(
-                  child: Text('No buses found'),
-                ),
-            ],
-          ),
+          width: MediaQuery.of(context).size.width*0.88,
+          padding: const EdgeInsets.fromLTRB(10.0, 10.0, 10.0, 10.0),
+          margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
+
+          child: _itemRow(context),
         ),
-      ],
     );
 
   }
 
   Widget _itemRow(BuildContext context) {
-    return SizedBox(
-        height: 100,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return  Row(
           children: <Widget>[
             // button with left arrow
             TextButton(
@@ -550,9 +534,9 @@ class _BusViewState extends State<BusView> {
               },
               child: const Icon(Icons.arrow_back_ios, size: 25, color: Colors.blue,),
             ),
-
-            _itemBuilder(context, _currentBusIndex),
-            // button with right arrow
+            Expanded(
+              child: _itemBuilder(context, _currentBusIndex),
+            ),
             TextButton(
               onPressed: ()=>{
                 setState(() {
@@ -564,7 +548,8 @@ class _BusViewState extends State<BusView> {
               child: const Icon(Icons.arrow_forward_ios, size: 25, color: Colors.blue,),
             ),
           ],
-        )
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly ,
+          crossAxisAlignment: CrossAxisAlignment.center,
     );
   }
 
@@ -581,19 +566,16 @@ class _BusViewState extends State<BusView> {
       );
     }
 
-    return InkWell(
-        child:  Center(
-              child: Column(
+    return Column(
                 children: <Widget>[
                   Text(
                     "Bus Line: ${busRealTimeData[index]!.busLineName}",
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),
                   ),
-
                   RichText(
                     text: TextSpan(
                       children: [
@@ -613,19 +595,17 @@ class _BusViewState extends State<BusView> {
                   ),
 
                   Text(
-                    "Next Bus: ${busRealTimeData[index]!.nextBusTime}",
+                    "Next Bus: ${busRealTimeData[index]!.busLineNextBusTime}",
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),
                   ),
                 ],
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
 
-              )
-
-        ),
     );
   }
 

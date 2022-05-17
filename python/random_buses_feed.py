@@ -9,6 +9,8 @@ import random
 from time import sleep
 from random import uniform
 
+from datetime import datetime
+from datetime import timedelta
 # import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -29,9 +31,11 @@ ref = db.reference('lines')
 
 
 class Stop:
-    def __init__(self, id, name, lat, lng):
+    def __init__(self, id, name, lat, lng, initial_bus_available_time):
         self.id = id
         self.name = name
+
+        self.bus_available_time = initial_bus_available_time
 
         if lat is not None:
             self.lat = float(lat)
@@ -42,6 +46,18 @@ class Stop:
             self.lng = float(lng)
         else:
             self.lng = 0.0
+
+    def update_bus_available_time(self, bus_time):
+        # set bus_available_time to bus_time adding 5 minutes to it
+        # parse bus_time to datetime
+        bus_time = datetime.strptime(bus_time, '%H:%M')
+        # add 5 minutes to bus_time
+        bus_time = bus_time + timedelta(minutes=5)
+        # convert bus_time to string
+        bus_time = bus_time.strftime('%H:%M')
+
+        self.bus_available_time = bus_time
+        
     
     def __str__(self):
         return self.name
@@ -51,7 +67,8 @@ class Stop:
             'stopId': self.id,
             'stopName': self.name,
             'stopLatitude': self.lat,
-            'stopLongitude': self.lng
+            'stopLongitude': self.lng,
+            'stopBusAvailableTime': self.bus_available_time,
         }
 
 class BusLine:
@@ -66,6 +83,9 @@ class BusLine:
         
         self.stops = stops
         self.geoid = Geod(ellps='WGS84')
+
+        self.has_departed = False
+        self.has_finished = False
     
         getcontext().prec = 7
         
@@ -106,14 +126,22 @@ class BusLine:
         return lat_new, lng_new
 
     def move_to_next_stop(self, speed = 10):
-    
+        if self.current_stop_index == 1:
+            print("Bus has departed from the first stop")
+            self.has_finished = False
+            self.has_departed = True
+
+        time_it_takes_to_move = 0.0
+
         # Given a single initial point and terminus point, and the number of points, returns a list of longitude/latitude pairs describing npts equally spaced intermediate points along the geodesic between the initial and terminus points.
         r = self.geoid.inv_intermediate(self.lng,self.lat,self.next_stop.lng, self.next_stop.lat, speed)
         for lon,lat in zip(r.lons, r.lats): 
             self.lat = lat
             self.lng = lon
             self.update_bus()
-            sleep(random.uniform(0.1, 0.5))
+            time = random.uniform(0.1, 0.5)
+            sleep(time)
+            time_it_takes_to_move += time
 
 
         print("Reached next stop")
@@ -135,13 +163,20 @@ class BusLine:
         self.next_stop = self.stops[self.current_stop_index] # Update the next stop
         
         # get the next bus time
-        self.next_bus_time += 1
-        if self.next_bus_time >= len(self.bus_times):
-            self.next_bus_time = 0
+        if self.has_departed:
+            self.next_bus_time += 1
+            if self.next_bus_time >= len(self.bus_times):
+                self.next_bus_time = 0
+        
+            self.stop.update_bus_available_time(self.bus_times[self.next_bus_time])
+            
             
         self.update_bus() # Update the bus position in the database
 
-        
+        if self.current_stop_index == len(self.stops) - 1:
+            self.has_finished = True
+            self.has_departed = False
+            print("Bus has departed")
         
 
     def update_bus(self):
@@ -206,8 +241,14 @@ def get_lines_stop(data):
 
 def get_stops(data):
     stops = []
+    initial_time = "8:00"
     for parada in data:
-        stops.append(Stop(parada['IdParadaBus'], parada['NomParadaBus'], parada['LatParadaBus'], parada['LngParadaBus']))
+        stops.append(Stop(parada['IdParadaBus'], parada['NomParadaBus'], parada['LatParadaBus'], parada['LngParadaBus'], initial_time))
+        # add 5 minutes to the initial time
+        initial_time = datetime.strptime(initial_time, "%H:%M")
+        initial_time = initial_time + timedelta(minutes=5)
+        initial_time = initial_time.strftime("%H:%M")
+
     return stops
 
 def initialize_buses(parades, linies, lines_with_stops):
