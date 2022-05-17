@@ -12,7 +12,7 @@ import '../services/map_service.dart';
 import '../services/realtime_database.dart';
 
 class BusView extends StatefulWidget {
-  const BusView({Key? key, required this.title, this.polylines, this.polylineCoordinates, this.markers, this.origin, this.destination, this.linesToUse}) : super(key: key);
+  const BusView({Key? key, required this.title, required this.isClient, this.polylines,  this.markers, this.origin, this.destination, this.linesToUse}) : super(key: key);
 
   final String title;
 
@@ -20,10 +20,10 @@ class BusView extends StatefulWidget {
   final BusStop? destination;
 
   final List<String>? linesToUse;
-  final List<LatLng>? polylineCoordinates;
   final Map<PolylineId, Polyline>? polylines;
   final Map<MarkerId, Marker>? markers;
 
+  final bool isClient;
 
   @override
   State<BusView> createState() => _BusViewState();
@@ -75,24 +75,21 @@ class _BusViewState extends State<BusView> {
   late BitmapDescriptor myIcon;
 
   /// This generates a marker for the map.
-  Future<void> generateBusMarker(String busId, int busPeopleNumber, double busLatitude, double busLongitude) async {
+  Future<void> generateBusMarker(String busId, InfoWindow infoWindow, double busLatitude, double busLongitude, bool isStop) async {
     LatLng busPosition = LatLng(busLatitude, busLongitude);
 
     final MarkerId markerId = MarkerId(busId);
 
     BitmapDescriptor markerbitmap = await BitmapDescriptor.fromAssetImage(
       const ImageConfiguration(),
-      "assets/bus_icon.png",
+      isStop ?  "assets/stop_icon.png" : "assets/bus_icon.png",
     );
 
     // creating a new MARKER
     final Marker marker = Marker(
       markerId: markerId,
       position: busPosition,
-      infoWindow: InfoWindow(
-        title: 'Bus $busId',
-        snippet: '$busPeopleNumber people',
-      ),
+      infoWindow: infoWindow,
       icon: markerbitmap,
       onTap: () {
         print('Marker Tapped');
@@ -268,13 +265,6 @@ class _BusViewState extends State<BusView> {
 
   void buildFromTo(List<Widget> children) {
     children.add(
-      Text(
-        'Line: ${busRealTimeData[_currentBusIndex]?.busLineName }',
-        style: const TextStyle(fontSize: 15),
-      ),
-    );
-
-    children.add(
         const Divider(
           color: Colors.orange,
           thickness: 1,
@@ -297,7 +287,8 @@ class _BusViewState extends State<BusView> {
   }
 
   void buildDataText(List<Widget> children, { bool fullInfo = false }) {
-    children.add(
+
+    /*children.add(
       Text(
         "Passengers: ${busRealTimeData[_currentBusIndex]?.busLinePeopleNumber}",
         style: const TextStyle(
@@ -305,7 +296,7 @@ class _BusViewState extends State<BusView> {
           color: Colors.orange,
         ),
       ),
-    );
+    );*/
 
     children.add(
       Text(
@@ -327,7 +318,7 @@ class _BusViewState extends State<BusView> {
       )
     );
 
-    if (fullInfo) {
+    if (fullInfo == true && !widget.isClient) {
       children.add(
         Text(
           "Lat ${busRealTimeData[_currentBusIndex]?.busLineLatitude} Lon ${busRealTimeData[_currentBusIndex]?.busLineLongitude}",
@@ -375,7 +366,7 @@ class _BusViewState extends State<BusView> {
 
     buildDataText(children, fullInfo: true);
 
-    if (widget.origin != null && widget.destination != null) {
+    if (widget.origin != null && widget.destination != null && widget.isClient) {
       buildFromTo(children);
     }
 
@@ -431,10 +422,30 @@ class _BusViewState extends State<BusView> {
 
     if (_isMapCreated) {
       for (var busData in busRealTimeData.values) {
-        generateBusMarker(
-            busData.busLineId, busData.busLinePeopleNumber, busData.busLineLatitude,
-            busData.busLineLongitude);
 
+        String busLineName = busData.busLineName;
+        int busLinePeopleNumber = busData.busLinePeopleNumber;
+
+        InfoWindow infoWindow = InfoWindow(
+          title: "Bus $busLineName",
+          snippet: '$busLinePeopleNumber people in bus',
+        );
+
+        generateBusMarker(busData.busLineId, infoWindow, busData.busLineLatitude, busData.busLineLongitude, false);
+
+        if (busData.busLineNextStop != null) {
+          BusStop nextStop = busData.busLineNextStop;
+
+          String nextStopName = nextStop.stopName;
+          String nextStopAvailableBus = nextStop.stopBusAvailableTime;
+
+          InfoWindow stopInfoWindow = InfoWindow(
+            title: nextStopName,
+            snippet: 'Bus will arrive at $nextStopAvailableBus',
+          );
+
+          generateBusMarker(nextStop.stopId, stopInfoWindow, nextStop.stopLatitude, nextStop.stopLongitude, true);
+        }
 
       }
 
@@ -505,10 +516,8 @@ class _BusViewState extends State<BusView> {
   }
 
   Widget buildBottomSheet() {
-    return Column(
-      children: <Widget>[
-        //buildCollapsed(radius, isExpanded: true),
-        Container(
+    return Center(
+        child: Container(
           decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.all(Radius.circular(circularRadius)),
@@ -519,32 +528,18 @@ class _BusViewState extends State<BusView> {
                 ),
               ]
           ),
-          padding: const EdgeInsets.fromLTRB(10.0, 0.0, 10.0, 14.0),
-          margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 14.0),
-          child:
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children:  <Widget>[
-              const SizedBox(height: 5.0),
-              if (busRealTimeData.isNotEmpty)
-                _itemRow(context),
-              if (busRealTimeData.isEmpty)
-                const Center(
-                  child: Text('No buses found'),
-                ),
-            ],
-          ),
+          width: MediaQuery.of(context).size.width*0.88,
+          padding: const EdgeInsets.fromLTRB(10.0, 10.0, 10.0, 10.0),
+          margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
+
+          child: _itemRow(context),
         ),
-      ],
     );
 
   }
 
   Widget _itemRow(BuildContext context) {
-    return SizedBox(
-        height: 100,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return  Row(
           children: <Widget>[
             // button with left arrow
             TextButton(
@@ -556,9 +551,9 @@ class _BusViewState extends State<BusView> {
               },
               child: const Icon(Icons.arrow_back_ios, size: 25, color: Colors.blue,),
             ),
-
-            _itemBuilder(context, _currentBusIndex),
-            // button with right arrow
+            Expanded(
+              child: _itemBuilder(context, _currentBusIndex),
+            ),
             TextButton(
               onPressed: ()=>{
                 setState(() {
@@ -570,22 +565,64 @@ class _BusViewState extends State<BusView> {
               child: const Icon(Icons.arrow_forward_ios, size: 25, color: Colors.blue,),
             ),
           ],
-        )
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly ,
+          crossAxisAlignment: CrossAxisAlignment.center,
     );
   }
 
   Widget _itemBuilder(BuildContext context, int index) {
-    return InkWell(
-        child:  Center(
-              child: Text(
-                    "Bus ${busRealTimeData[index]!.busLineName}",
+    if (busRealTimeData.isEmpty) {
+      return const Center(
+        child: Text('No buses found'),
+      );
+    }
+
+    if (index >= busRealTimeData.length) {
+      return const Center(
+        child: Text('No buses found'),
+      );
+    }
+
+    return Column(
+                children: <Widget>[
+                  Text(
+                    "Bus Line: ${busRealTimeData[index]!.busLineName}",
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),
-              ),
-        ),
+                  ),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        const WidgetSpan(
+                          child: Icon(Icons.emoji_people_outlined , size: 30),
+                        ),
+                        TextSpan(
+                          text:  busRealTimeData[index]!.busLinePeopleNumber.toString(),
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Text(
+                    "Next Bus: ${busRealTimeData[index]!.busLineNextBusTime}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+
     );
   }
 
