@@ -75,24 +75,21 @@ class _BusViewState extends State<BusView> {
   late BitmapDescriptor myIcon;
 
   /// This generates a marker for the map.
-  Future<void> generateBusMarker(String busId, int busPeopleNumber, double busLatitude, double busLongitude) async {
+  Future<void> generateBusMarker(String busId, InfoWindow infoWindow, double busLatitude, double busLongitude, bool isStop) async {
     LatLng busPosition = LatLng(busLatitude, busLongitude);
 
     final MarkerId markerId = MarkerId(busId);
 
     BitmapDescriptor markerbitmap = await BitmapDescriptor.fromAssetImage(
       const ImageConfiguration(),
-      "assets/bus_icon.png",
+      isStop ?  "assets/stop_icon.png" : "assets/bus_icon.png",
     );
 
     // creating a new MARKER
     final Marker marker = Marker(
       markerId: markerId,
       position: busPosition,
-      infoWindow: InfoWindow(
-        title: 'Bus $busId',
-        snippet: '$busPeopleNumber people',
-      ),
+      infoWindow: infoWindow,
       icon: markerbitmap,
       onTap: () {
         print('Marker Tapped');
@@ -425,10 +422,30 @@ class _BusViewState extends State<BusView> {
 
     if (_isMapCreated) {
       for (var busData in busRealTimeData.values) {
-        generateBusMarker(
-            busData.busLineId, busData.busLinePeopleNumber, busData.busLineLatitude,
-            busData.busLineLongitude);
 
+        String busLineName = busData.busLineName;
+        int busLinePeopleNumber = busData.busLinePeopleNumber;
+
+        InfoWindow infoWindow = InfoWindow(
+          title: "Bus $busLineName",
+          snippet: '$busLinePeopleNumber people in bus',
+        );
+
+        generateBusMarker(busData.busLineId, infoWindow, busData.busLineLatitude, busData.busLineLongitude, false);
+
+        if (busData.busLineNextStop != null) {
+          BusStop nextStop = busData.busLineNextStop;
+
+          String nextStopName = nextStop.stopName;
+          String nextStopAvailableBus = nextStop.stopBusAvailableTime;
+
+          InfoWindow stopInfoWindow = InfoWindow(
+            title: nextStopName,
+            snippet: 'Bus will arrive at $nextStopAvailableBus',
+          );
+
+          generateBusMarker(nextStop.stopId, stopInfoWindow, nextStop.stopLatitude, nextStop.stopLongitude, true);
+        }
 
       }
 

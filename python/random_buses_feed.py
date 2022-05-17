@@ -1,4 +1,5 @@
 from ast import increment_lineno
+from multiprocessing.dummy import freeze_support
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -8,6 +9,9 @@ import json
 import random
 from time import sleep
 from random import uniform
+
+import multiprocessing as mp
+import queue
 
 from datetime import datetime
 from datetime import timedelta
@@ -20,6 +24,7 @@ from decimal import *
 
 from pyproj import Geod
 
+
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate('secret-key.json')
 # Initialize the app with a service account, granting admin privileges
@@ -29,6 +34,13 @@ firebase_admin.initialize_app(cred, {
 
 ref = db.reference('lines')
 
+db = firestore.client()
+
+doc_ref = db.collection(u'uab_bus_stops')
+
+
+
+TIME_BETWEEN_STOPS = 5
 
 class Stop:
     def __init__(self, id, name, lat, lng, initial_bus_available_time):
@@ -47,12 +59,14 @@ class Stop:
         else:
             self.lng = 0.0
 
+        self.update_stop()
+
     def update_bus_available_time(self, bus_time):
         # set bus_available_time to bus_time adding 5 minutes to it
         # parse bus_time to datetime
         bus_time = datetime.strptime(bus_time, '%H:%M')
         # add 5 minutes to bus_time
-        bus_time = bus_time + timedelta(minutes=5)
+        bus_time = bus_time + timedelta(minutes=TIME_BETWEEN_STOPS)
         # convert bus_time to string
         bus_time = bus_time.strftime('%H:%M')
 
@@ -62,6 +76,9 @@ class Stop:
     def __str__(self):
         return self.name
     
+    def update_stop(self):
+        doc_ref.document(self.id).set(self.to_json())
+
     def to_json(self):
         return {
             'stopId': self.id,
@@ -119,7 +136,11 @@ class BusLine:
                 'busLineRoute':  [stop.id for stop in self.stops],
                 'busLineNextBusTime':  self.bus_times[self.next_bus_time],
             }
-
+    
+    def run(self):
+        while True:
+            self.move_to_next_stop(speed = 10)
+            print("THREAD RUNNING BUS {0}".format(self.line_id) )
 
     def add_distance(self, lat, lng, az, dist):
         lng_new, lat_new, return_az = self.geoid.fwd(lng, lat, az, dist)
@@ -172,6 +193,7 @@ class BusLine:
             
             
         self.update_bus() # Update the bus position in the database
+        self.stop.update_stop() # Update the stop position in the database
 
         if self.current_stop_index == len(self.stops) - 1:
             self.has_finished = True
@@ -242,11 +264,15 @@ def get_lines_stop(data):
 def get_stops(data):
     stops = []
     initial_time = "8:00"
+    stops_to_ignore = ["25", "29", "26"]
     for parada in data:
+        if parada['IdParadaBus'] in stops_to_ignore:
+            continue
+
         stops.append(Stop(parada['IdParadaBus'], parada['NomParadaBus'], parada['LatParadaBus'], parada['LngParadaBus'], initial_time))
         # add 5 minutes to the initial time
         initial_time = datetime.strptime(initial_time, "%H:%M")
-        initial_time = initial_time + timedelta(minutes=5)
+        initial_time = initial_time + timedelta(minutes=TIME_BETWEEN_STOPS)
         initial_time = initial_time.strftime("%H:%M")
 
     return stops
@@ -267,31 +293,48 @@ def initialize_buses(parades, linies, lines_with_stops):
 
     return buses
 
-stops, bus_lines = read_bus_data()
+def main():
 
-lines_with_stops = get_lines_stop(bus_lines)
+    stops, bus_lines = read_bus_data()
 
-stops = get_stops(stops)
+    lines_with_stops = get_lines_stop(bus_lines)
 
-buses = initialize_buses(stops, bus_lines, lines_with_stops)
+    stops = get_stops(stops)
 
-# db = firestore.client()
+    buses = initialize_buses(stops, bus_lines, lines_with_stops)
 
-# doc_ref = db.collection(u'uab_bus_stops')
+    # db = firestore.client()
 
-# for value in stops:
-#     print(value)
-#     doc_ref.document(value.id).set(value.to_json())
+    # doc_ref = db.collection(u'uab_bus_stops')
 
-# doc_ref = db.collection(u'uab_bus_lines')
+    # for value in stops:
+    #     print(value)
+    #     doc_ref.document(value.id).set(value.to_json())
 
-# for value in buses:
-#     print(value)
-#     doc_ref.document(value.line_id).set(value.to_json())
+    # doc_ref = db.collection(u'uab_bus_lines')
 
-while True:
+    # for value in buses:
+    #     print(value)
+    #     doc_ref.document(value.line_id).set(value.to_json())
+
+
+    processes = []
     for bus in buses:
-        bus.move_to_next_stop(speed = 10)
-        sleep(1)
-        print("Current BUS: " + str(bus))
-        # ref.child('bus{0}'.format(i)).set({'busId': str(i), 'busPeopleNumber': random.randint(1, 200), 'busTime': '12:00', 'busLatitude': stop['latitude'], 'busLongitude': stop['longitude']})
+        print(f"bus: {bus.line_id}")
+        p = mp.Process(target=bus.run)
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+
+    # while True:
+    #     for bus in buses:
+    #         bus.move_to_next_stop(speed = 20)
+
+
+if __name__ == "__main__":
+    # user fork as per firestore doc
+    mp.set_start_method('spawn', force=True)
+
+    main()
