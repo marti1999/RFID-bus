@@ -56,8 +56,8 @@ void initWiFi() {
    * Inicialitza el modul de xarxa Wifi
    * Durant el procés, activa el led vermell i al finalitzar activa el led verd per confirmar la connexió.
    */
-  const char* ssid = "Casa_Garrofe1";
-  const char* password = "garrofeurrutia";
+  const char* ssid = "";
+  const char* password = "";
  
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
