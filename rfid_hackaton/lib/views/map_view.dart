@@ -283,8 +283,9 @@ class _MapViewState extends State<MapView> {
         value.docs.forEach((doc) =>
             setState(() {
               var map = Map<String, dynamic>.from(doc.data() as Map<dynamic, dynamic>);
+              print(map);
               _busStops.add(BusStop.fromJson(map));
-              _busStops.sort((a, b) => a.stopName.compareTo(b.stopName));
+              //_busStops.sort((a, b) => a.stopName.compareTo(b.stopName));
             })
         )
     );

@@ -639,7 +639,6 @@ class _BusViewState extends State<BusView> {
 
     return Column(
                 children: <Widget>[
-
                   RichText(
                     text: TextSpan(
                       children: [

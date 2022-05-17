@@ -56,8 +56,8 @@ void initWiFi() {
    * Inicialitza el modul de xarxa Wifi
    * Durant el procés, activa el led vermell i al finalitzar activa el led verd per confirmar la connexió.
    */
-  const char* ssid = "Casa_Garrofe1";
-  const char* password = "garrofeurrutia";
+  const char* ssid = "";
+  const char* password = "";
  
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -167,7 +167,8 @@ bool check_uid(char *uid) {
     // Actualitzem contador de viatges
     num_viatges++;
     doc["viatges"] = num_viatges;
-    doc["historial_viatges"]["pujada"][String(timeStringBuff)] = String(index_parada_actual);  
+    doc["historial_viatges"]["pujada"][String(timeStringBuff)]["busStop"] = String(index_parada_actual);  
+    doc["historial_viatges"]["pujada"][String(timeStringBuff)]["busLine"] = String(LINE_ID);  
   } else {
     doc["historial_viatges"]["baixada"][String(timeStringBuff)] = PARADA_BAIXADA;  
   }
