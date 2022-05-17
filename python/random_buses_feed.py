@@ -1,4 +1,5 @@
 from ast import increment_lineno
+from multiprocessing.dummy import freeze_support
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -9,6 +10,11 @@ import random
 from time import sleep
 from random import uniform
 
+import multiprocessing as mp
+import queue
+
+from datetime import datetime
+from datetime import timedelta
 # import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -17,6 +23,7 @@ import copy
 from decimal import *
 
 from pyproj import Geod
+
 
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate('secret-key.json')
@@ -27,11 +34,20 @@ firebase_admin.initialize_app(cred, {
 
 ref = db.reference('lines')
 
+db = firestore.client()
+
+doc_ref = db.collection(u'uab_bus_stops')
+
+
+
+TIME_BETWEEN_STOPS = 5
 
 class Stop:
-    def __init__(self, id, name, lat, lng):
+    def __init__(self, id, name, lat, lng, initial_bus_available_time):
         self.id = id
         self.name = name
+
+        self.bus_available_time = initial_bus_available_time
 
         if lat is not None:
             self.lat = float(lat)
@@ -42,16 +58,34 @@ class Stop:
             self.lng = float(lng)
         else:
             self.lng = 0.0
+
+        self.update_stop()
+
+    def update_bus_available_time(self, bus_time):
+        # set bus_available_time to bus_time adding 5 minutes to it
+        # parse bus_time to datetime
+        bus_time = datetime.strptime(bus_time, '%H:%M')
+        # add 5 minutes to bus_time
+        bus_time = bus_time + timedelta(minutes=TIME_BETWEEN_STOPS)
+        # convert bus_time to string
+        bus_time = bus_time.strftime('%H:%M')
+
+        self.bus_available_time = bus_time
+        
     
     def __str__(self):
         return self.name
     
+    def update_stop(self):
+        doc_ref.document(self.id).set(self.to_json())
+
     def to_json(self):
         return {
             'stopId': self.id,
             'stopName': self.name,
             'stopLatitude': self.lat,
-            'stopLongitude': self.lng
+            'stopLongitude': self.lng,
+            'stopBusAvailableTime': self.bus_available_time,
         }
 
 class BusLine:
@@ -66,6 +100,9 @@ class BusLine:
         
         self.stops = stops
         self.geoid = Geod(ellps='WGS84')
+
+        self.has_departed = False
+        self.has_finished = False
     
         getcontext().prec = 7
         
@@ -99,21 +136,34 @@ class BusLine:
                 'busLineRoute':  [stop.id for stop in self.stops],
                 'busLineNextBusTime':  self.bus_times[self.next_bus_time],
             }
-
+    
+    def run(self):
+        while True:
+            self.move_to_next_stop(speed = 30)
+            print("THREAD RUNNING BUS {0}".format(self.line_id))
+            sleep(random.randint(1, 5))
 
     def add_distance(self, lat, lng, az, dist):
         lng_new, lat_new, return_az = self.geoid.fwd(lng, lat, az, dist)
         return lat_new, lng_new
 
     def move_to_next_stop(self, speed = 10):
-    
+        if self.current_stop_index == 1:
+            print("Bus has departed from the first stop")
+            self.has_finished = False
+            self.has_departed = True
+
+        time_it_takes_to_move = 0.0
+
         # Given a single initial point and terminus point, and the number of points, returns a list of longitude/latitude pairs describing npts equally spaced intermediate points along the geodesic between the initial and terminus points.
         r = self.geoid.inv_intermediate(self.lng,self.lat,self.next_stop.lng, self.next_stop.lat, speed)
         for lon,lat in zip(r.lons, r.lats): 
             self.lat = lat
             self.lng = lon
             self.update_bus()
-            sleep(random.uniform(0.1, 0.5))
+            time = random.uniform(0.1, 0.5)
+            sleep(time)
+            time_it_takes_to_move += time
 
 
         print("Reached next stop")
@@ -135,13 +185,21 @@ class BusLine:
         self.next_stop = self.stops[self.current_stop_index] # Update the next stop
         
         # get the next bus time
-        self.next_bus_time += 1
-        if self.next_bus_time >= len(self.bus_times):
-            self.next_bus_time = 0
+        if self.has_departed:
+            self.next_bus_time += 1
+            if self.next_bus_time >= len(self.bus_times):
+                self.next_bus_time = 0
+        
+            self.stop.update_bus_available_time(self.bus_times[self.next_bus_time])
+            
             
         self.update_bus() # Update the bus position in the database
+        self.stop.update_stop() # Update the stop position in the database
 
-        
+        if self.current_stop_index == len(self.stops) - 1:
+            self.has_finished = True
+            self.has_departed = False
+            print("Bus has departed")
         
 
     def update_bus(self):
@@ -206,8 +264,18 @@ def get_lines_stop(data):
 
 def get_stops(data):
     stops = []
+    initial_time = "8:00"
+    stops_to_ignore = ["25", "29", "26"]
     for parada in data:
-        stops.append(Stop(parada['IdParadaBus'], parada['NomParadaBus'], parada['LatParadaBus'], parada['LngParadaBus']))
+        if parada['IdParadaBus'] in stops_to_ignore:
+            continue
+
+        stops.append(Stop(parada['IdParadaBus'], parada['NomParadaBus'], parada['LatParadaBus'], parada['LngParadaBus'], initial_time))
+        # add 5 minutes to the initial time
+        initial_time = datetime.strptime(initial_time, "%H:%M")
+        initial_time = initial_time + timedelta(minutes=TIME_BETWEEN_STOPS)
+        initial_time = initial_time.strftime("%H:%M")
+
     return stops
 
 def initialize_buses(parades, linies, lines_with_stops):
@@ -226,31 +294,48 @@ def initialize_buses(parades, linies, lines_with_stops):
 
     return buses
 
-stops, bus_lines = read_bus_data()
+def main():
 
-lines_with_stops = get_lines_stop(bus_lines)
+    stops, bus_lines = read_bus_data()
 
-stops = get_stops(stops)
+    lines_with_stops = get_lines_stop(bus_lines)
 
-buses = initialize_buses(stops, bus_lines, lines_with_stops)
+    stops = get_stops(stops)
 
-# db = firestore.client()
+    buses = initialize_buses(stops, bus_lines, lines_with_stops)
 
-# doc_ref = db.collection(u'uab_bus_stops')
+    # db = firestore.client()
 
-# for value in stops:
-#     print(value)
-#     doc_ref.document(value.id).set(value.to_json())
+    # doc_ref = db.collection(u'uab_bus_stops')
 
-# doc_ref = db.collection(u'uab_bus_lines')
+    # for value in stops:
+    #     print(value)
+    #     doc_ref.document(value.id).set(value.to_json())
 
-# for value in buses:
-#     print(value)
-#     doc_ref.document(value.line_id).set(value.to_json())
+    # doc_ref = db.collection(u'uab_bus_lines')
 
-while True:
+    # for value in buses:
+    #     print(value)
+    #     doc_ref.document(value.line_id).set(value.to_json())
+
+
+    processes = []
     for bus in buses:
-        bus.move_to_next_stop(speed = 10)
-        sleep(1)
-        print("Current BUS: " + str(bus))
-        # ref.child('bus{0}'.format(i)).set({'busId': str(i), 'busPeopleNumber': random.randint(1, 200), 'busTime': '12:00', 'busLatitude': stop['latitude'], 'busLongitude': stop['longitude']})
+        print(f"bus: {bus.line_id}")
+        p = mp.Process(target=bus.run)
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+
+    # while True:
+    #     for bus in buses:
+    #         bus.move_to_next_stop(speed = 20)
+
+
+if __name__ == "__main__":
+    # user fork as per firestore doc
+    mp.set_start_method('spawn', force=True)
+
+    main()

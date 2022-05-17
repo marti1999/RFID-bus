@@ -32,15 +32,12 @@ class _MapViewState extends State<MapView> {
 
   final Completer<GoogleMapController> _controller = Completer();
 
-  Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
   final PanelController _pc = PanelController();
 
+  Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
   Map<PolylineId, Polyline> polylines = <PolylineId, Polyline>{};
-  Map<String, List<LatLng>> polylinesCoords = <String, List<LatLng>>{};
-  int _polylineIdCounter = 0;
 
   List<String> linesToUse = [];
-  //List<LatLng> polylineCoordinates = [];
 
   String _location = "";
   String _destination = "";
@@ -51,10 +48,6 @@ class _MapViewState extends State<MapView> {
 
   BusStop? originBusStop = null;
   BusStop? destinationBusStop = null;
-
-  //bool showBuses = false;
-  bool locationSet = false;
-  bool destinationSet = false;
 
   final List<BusStop> _busStops = [];
   final List<BusRtData> _busLines = [];
@@ -81,17 +74,18 @@ class _MapViewState extends State<MapView> {
     return items;
   }
 
-  bool _getPolyline()  {
+  bool getPossibleRoutes()  {
+    if (originBusStop == null || destinationBusStop == null) {
+      return false;
+    }
 
-    BusStop busStopOrigin = getBusStop(_location);
-    BusStop busStopDestination = getBusStop(_destination);
-
+    BusStop busStopOrigin = BusStop.getBusStop(_location, _busStops);
+    BusStop busStopDestination = BusStop.getBusStop(_destination, _busStops);
 
     Map<String, List<BusStop>> possibleRoutes =  GpsService().getRouteBetweenCoordinates(busStopOrigin, busStopDestination, _busStops, _busLines);
 
     if (possibleRoutes.isNotEmpty) {
       for (String route in possibleRoutes.keys) {
-        setState(() {
           List<LatLng> routeCoordinates  = [];
 
           for (int i = 0; i < possibleRoutes[route]!.length; i++) {
@@ -100,71 +94,33 @@ class _MapViewState extends State<MapView> {
 
             LatLng coord = LatLng(busStop.stopLatitude, busStop.stopLongitude);
 
-            generateMarker(route, route, coord.latitude, coord.longitude, false);
-            routeCoordinates.add(coord);
+            InfoWindow infoWindow = InfoWindow(
+              title: busStop.stopName,
+              snippet: busStop.stopBusAvailableTime,
+            );
+
+            setState(() {
+              MapService().generateMarker(busStop.stopId, infoWindow, coord.latitude, coord.longitude, MarkerType.busStop, markers);
+              routeCoordinates.add(coord);
+            });
           }
 
-          polylinesCoords[route] = routeCoordinates;
           linesToUse.add(route);
-          createPolyLine(routeCoordinates);
 
-        });
+          bool created = MapService().createPolyLine(routeCoordinates, polylines);
+
+          if (created) {
+            setState(() {
+              _pc.close();
+            });
+          }
       }
       return true;
+
     } else {
       MapService().showAlertDialog(context, 'No route found our route has transfers and are not developed yet');
       return false;
     }
-
-  }
-
-  void createPolyLine(List<LatLng> points) {
-    final int polylineCount = polylines.length;
-
-    final String polylineIdVal = 'polyline_id_$_polylineIdCounter';
-
-    _polylineIdCounter++;
-
-    final PolylineId polylineId = PolylineId(polylineIdVal);
-
-    // get the color for the polyline based on the index of the polyline
-    final Color color = Color.fromARGB(255, (200 + polylineCount * 50) % 255, (200 + polylineCount * 50) % 255, (200 + polylineCount * 50) % 255);
-
-    final Polyline polyline = Polyline(
-      polylineId: polylineId,
-      consumeTapEvents: true,
-      color: color,
-      width: 5,
-      points: points,
-    );
-
-    if (!polylines.containsKey(polylineId)) {
-      setState(() {
-        polylines[polylineId] = polyline;
-      });
-    }
-  }
-
-  /// This generates a marker for the map.
-  Future<void> generateMarker(String address, String title, double lat, double lng, bool isDestination) async {
-    final MarkerId markerId = MarkerId(address);
-
-    final Marker marker = Marker(
-      markerId: markerId,
-      position: LatLng(lat, lng),
-      infoWindow: InfoWindow(title: title),
-      onTap: () {
-        print('Marker Tapped');
-      },
-      icon: isDestination ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed) : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-    );
-
-
-
-    setState(() {
-      // adding a new marker to map
-      markers[markerId] = marker;
-    });
   }
 
   /// It hides the panel for some seconds so the user can see the map
@@ -187,12 +143,20 @@ class _MapViewState extends State<MapView> {
     _pc.open();
   }
 
+  // generates a marker for query and shows it with animation on the map
   void genMarkerAndZoom(GoogleMapController controller, String query, LatLng latLng, bool isDestination) {
-    // remove old markers
-    markers.clear();
-    generateMarker(originBusStop!.stopName, originBusStop!.stopName, originBusStop!.stopLatitude, originBusStop!.stopLongitude, isDestination);
+    // remove old markers if any
+    if (markers.length > 2) {
+      markers.clear();
+    }
 
-    generateMarker(query, query, latLng.latitude, latLng.longitude, isDestination);
+    // Info Window es el que es mostra quan cliques en un iconito d'aquestos del mapa
+    InfoWindow infoWindow = InfoWindow(
+      title: query,
+      snippet: query,
+    );
+
+    MapService().generateMarker(query, infoWindow, latLng.latitude, latLng.longitude, isDestination ? MarkerType.destination : MarkerType.origin, markers);
 
     final cameraUpdate = CameraUpdate.newLatLngZoom(LatLng(latLng.latitude, latLng.longitude), 14.4746);
 
@@ -200,14 +164,7 @@ class _MapViewState extends State<MapView> {
         showMarkerAnimation(controller, query));
   }
 
-  BusStop getBusStop(String query) {
-    for (BusStop busStop in _busStops) {
-      if (busStop.stopName == query) {
-        return busStop;
-      }
-    }
-    return _busStops.first;
-  }
+
 
   /// This function is called when the user writes a query.
   /// It will call the Google Maps API to get the coordinates of the query.
@@ -251,21 +208,7 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  Future<void> updateMapLocation(LatLng? value) async {
-    final GoogleMapController controller = await _controller.future;
 
-    try {
-      if (value != null) {
-        controller.animateCamera(CameraUpdate.newLatLngZoom(LatLng(value.latitude, value.longitude), 14.4746));
-      }else{
-        GpsService().determinePosition().then((value) => {
-          controller.animateCamera(CameraUpdate.newLatLngZoom(LatLng(value.latitude, value.longitude), 14.4746))
-        });
-      }
-    } catch (e) {
-      MapService().showAlertDialog(context,  'No location found for');
-    }
-  }
 
   double circularRadius = 10;
 
@@ -282,10 +225,9 @@ class _MapViewState extends State<MapView> {
       bool savedLocation = saveLocation(locationName, false);
       bool savedDestination = saveLocation(possibleDestinationName, true);
 
-
       if (savedLocation && savedDestination) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$locationName was saved'),
+          content: Text('$locationName and $possibleDestinationName was saved'),
           duration: const Duration(milliseconds: 1500),
         ));
       }
@@ -296,6 +238,7 @@ class _MapViewState extends State<MapView> {
         ));
       }
 
+      //MapService().zoomToMarkers(_controller, _locationLatLng, _destinationLatLng);
 
     }else{
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -323,6 +266,8 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+
+
   @override
   void initState() {
     super.initState();
@@ -343,6 +288,16 @@ class _MapViewState extends State<MapView> {
             })
         )
     );
+
+    StreamSubscription<Position> positionStream = Geolocator.getPositionStream(locationSettings: GpsService().getLocationSettings()).listen(
+            (Position? position) {
+          print(position == null ? 'Unknown' : '${position.latitude.toString()}, ${position.longitude.toString()}');
+
+          if (position != null) {
+            MapService().updateMapLocation(() { setState(() {}); }, context, LatLng(position.latitude, position.longitude), _controller, markers);
+          }
+
+        });
 
     RealDatabaseService().getBusesData().get().then((buses) =>
       fillBusLines(buses),
@@ -420,7 +375,7 @@ class _MapViewState extends State<MapView> {
             ),
             floatingActionButton: FloatingActionButton(
               onPressed: () {
-                updateMapLocation(null);
+                MapService().updateMapLocation(() { setState(() {}); }, context, null, _controller, markers);
               },
               child: const Icon(Icons.my_location),
             ),
@@ -436,7 +391,7 @@ class _MapViewState extends State<MapView> {
 
     if (location != null && location.latitude != 0 && location.longitude != 0)
     {
-      _currentPosition = LatLng(location.latitude, location.longitude);
+        _currentPosition = LatLng(location.latitude, location.longitude);
     }
 
     CameraPosition _kGooglePlex = CameraPosition(
@@ -597,7 +552,7 @@ class _MapViewState extends State<MapView> {
                   onPressed: () {
                     _goToNextScreen();
                   },
-                  child: const Text('Leets goo'),
+                  child: const Text('Go'),
                   focusNode: sendButtonFocusNode,
                 ),
             ],
@@ -611,7 +566,7 @@ class _MapViewState extends State<MapView> {
   /* Draws the bus line on the map and goes to the real time buses screen */
   void _goToNextScreen(){
 
-    bool routeFound = _getPolyline();
+    bool routeFound = getPossibleRoutes();
 
     if (polylines.isNotEmpty && routeFound) {
       Set<Polyline> polylinesSet = Set<Polyline>.of(
@@ -621,7 +576,7 @@ class _MapViewState extends State<MapView> {
 
 
       // wait for the map to finish rendering
-      Future.delayed(const Duration(milliseconds: 1500), () {
+      Future.delayed(const Duration(milliseconds: 500), () {
         Navigator.push(context, MaterialPageRoute(builder: (
             context) =>
             BusView(title: 'Bus Routes',
@@ -630,7 +585,8 @@ class _MapViewState extends State<MapView> {
               destination: destinationBusStop,
               polylines: polylines,
               linesToUse: linesToUse,
-              markers: markers,),)
+              markers: markers,
+              busStops: null,),)
         );
       });
     }
@@ -640,7 +596,7 @@ class _MapViewState extends State<MapView> {
 
   bool saveLocation(String location, bool isDestination)  {
     if (location.isNotEmpty) {
-      BusStop busStop = getBusStop(location);
+      BusStop busStop = BusStop.getBusStop(location, _busStops);
 
       LatLng latLng = LatLng (busStop.stopLatitude, busStop.stopLongitude);
 
@@ -658,7 +614,6 @@ class _MapViewState extends State<MapView> {
         if (isDestination) {
           _destination = location;
           _destinationLatLng = latLng;
-          destinationSet = true;
 
           destinationBusStop = busStop;
 
@@ -667,7 +622,6 @@ class _MapViewState extends State<MapView> {
         } else {
           _location = location;
           _locationLatLng = latLng;
-          locationSet = true;
 
           originBusStop = busStop;
         }
@@ -681,10 +635,17 @@ class _MapViewState extends State<MapView> {
       setState(() {
         if (isDestination) {
           _destination = "";
-          destinationSet = false;
+          _destinationLatLng = const LatLng(0, 0);
+
+          polylines.clear();
+          linesToUse.clear();
+
+          destinationBusStop = null;
         } else {
           _location = "";
-          locationSet = false;
+          _locationLatLng = const LatLng(0, 0);
+
+          originBusStop = null;
         }
       });
 
