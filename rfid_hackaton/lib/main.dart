@@ -17,7 +17,8 @@ void main() async {
         apiKey: "AIzaSyAY87vG_P_n9zzGTNOuzVygIbj07FfiZwI",
         appId: "964587985452-udiad96qt2d1e1nmhur4ci4cp0lh4iip.apps.googleusercontent.com",
         messagingSenderId: "Hola",
-        projectId: "graphical-bus-348706"
+        projectId: "graphical-bus-348706",
+        storageBucket: "graphical-bus-348706.appspot.com",
     ),
   );
 

@@ -1,7 +1,13 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:rfid_hackaton/services/auth.dart';
 import 'package:rfid_hackaton/shared/constants.dart';
 import 'package:rfid_hackaton/shared/loading.dart';
+import 'dart:io';
+// import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 
@@ -18,6 +24,7 @@ class _RegisterState extends State<Register> {
 
    final AuthService _auth = AuthService();
    final _formKey = GlobalKey<FormState>();
+   File? imageFile=null;
    bool loading = false;
 
    //text field state
@@ -29,6 +36,19 @@ class _RegisterState extends State<Register> {
   String sex = '';
   String error = '';
 
+  // Future pickImageGallery() async{
+  //   try{
+  //     final image = await ImagePicker().pickImage(source : ImageSource.gallery);
+  //     if(image == null) return ;
+  //     final imageTemporary = File(image.path);
+  //     setState(() => this.imageFile = imageTemporary );
+  //   } on PlatformException catch(e){
+  //     print('Failed to pick image: $e');
+  //   }
+  // }
+  //  Future pickImageCamera() async{
+  //    await ImagePicker().pickImage(source : ImageSource.camera);
+  //  }
   @override
   Widget build(BuildContext context) {
     return loading ? Loading():Scaffold(
@@ -161,6 +181,23 @@ class _RegisterState extends State<Register> {
                     ),
                   ),
                   SizedBox(height: 20.0,),
+                  ElevatedButton.icon(
+                    icon: Icon(Icons.image_outlined),
+                    label: Text("Pick Gallery"),
+
+                    onPressed: () async{
+                      final result = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false);
+                      if(result != null && result.files.isNotEmpty) {
+                        final fileBytes = result.files.first.bytes;
+                        final fileName = result.files.first.name;
+
+                        // upload file
+                        await FirebaseStorage.instance.ref('$fileName').putData(fileBytes!);
+                        setState(() => imagePath = fileName);
+                      }
+                    }
+                  ),
+                  SizedBox(height: 20.0,),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       primary: Colors.pink[400],
@@ -192,5 +229,11 @@ class _RegisterState extends State<Register> {
             )
           )
         );
+  }
+  Future<File> saveFilePermanently(PlatformFile file) async{
+    final appStorage = await getApplicationDocumentsDirectory();
+    final newFile = File('${appStorage.path}/${file.name}');
+
+    return File(file.path!).copy(newFile.path);
   }
 }
