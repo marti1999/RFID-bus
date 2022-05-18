@@ -45,7 +45,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 24),
                     buildName(_user),
-                    NumbersWidget(co2: _user.co2saved!, km: _user.km!),
+                    NumbersWidget(co2: _user.co2saved!, km: _user.km!, trips: _user.viatges!,),
                   ],
                 )
             );// your widget

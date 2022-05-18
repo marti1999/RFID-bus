@@ -20,7 +20,8 @@ class DatabaseService {
       'isDarkMode': false,
       'imagePath': imagePath,
       'sex':sex,
-      'city': city
+      'city': city,
+      'viatges' : 0
       // 'age':15
     });
   }
