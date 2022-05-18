@@ -27,4 +27,13 @@ class BusStop {
     'stopLongitude': stopLongitude,
     'stopBusAvailableTime': stopBusAvailableTime,
   };
+
+  static BusStop getBusStop(String query, List<BusStop> busStops)  {
+    for (BusStop busStop in busStops) {
+      if (busStop.stopName == query) {
+        return busStop;
+      }
+    }
+    return busStops.first;
+  }
 }

@@ -139,8 +139,9 @@ class BusLine:
     
     def run(self):
         while True:
-            self.move_to_next_stop(speed = 10)
-            print("THREAD RUNNING BUS {0}".format(self.line_id) )
+            self.move_to_next_stop(speed = 30)
+            print("THREAD RUNNING BUS {0}".format(self.line_id))
+            sleep(random.randint(1, 5))
 
     def add_distance(self, lat, lng, az, dist):
         lng_new, lat_new, return_az = self.geoid.fwd(lng, lat, az, dist)

@@ -1,0 +1,3 @@
+pyproj
+firebase_admin
+beautifulsoup4
