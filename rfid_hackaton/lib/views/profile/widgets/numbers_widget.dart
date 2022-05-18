@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 class NumbersWidget extends StatelessWidget {
-  const NumbersWidget({Key? key, required this.co2, required this.km}) : super(key: key);
+  const NumbersWidget({Key? key, required this.co2, required this.km, required this.trips}) : super(key: key);
   final num km;
   final double co2;
+  final int trips;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -13,7 +14,7 @@ class NumbersWidget extends StatelessWidget {
           buildDivider(),
           buildButton(context, km.toString(), 'KM'),
           buildDivider(),
-          buildButton(context, '50', 'euros'),
+          buildButton(context, trips.toString(), 'Trips'),
         ],
       );
 
