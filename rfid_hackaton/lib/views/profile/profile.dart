@@ -35,6 +35,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 body: ListView(
                   physics: BouncingScrollPhysics(),
                   children: [
+                    SizedBox(height: 10),
+
                     ProfileWidget(
 
                         onClicked: () {
@@ -45,6 +47,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 24),
                     buildName(_user),
+                    SizedBox(height: 30),
+
                     NumbersWidget(co2: _user.co2saved!, km: _user.km!, trips: _user.viatges!,),
                   ],
                 )

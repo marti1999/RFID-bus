@@ -78,18 +78,18 @@ class _MyHomePageState extends State<Home> {
                 });
               },
             ),
+            // ListTile(
+            //   title: Text("upload image test"),
+            //   leading: Icon(Icons.create_new_folder),
+            //   onTap: (){
+            //     setState(() {
+            //       body_widget_index = 4;
+            //       Navigator.pop(context);
+            //     });
+            //   },
+            // ),
             ListTile(
-              title: Text("upload image test"),
-              leading: Icon(Icons.create_new_folder),
-              onTap: (){
-                setState(() {
-                  body_widget_index = 4;
-                  Navigator.pop(context);
-                });
-              },
-            ),
-            ListTile(
-              title: Text("Feedback form"),
+              title: Text("Send feedback"),
               leading: Icon(Icons.feedback_outlined),
               onTap: (){
                 setState(() {
