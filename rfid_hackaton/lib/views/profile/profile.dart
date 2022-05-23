@@ -57,7 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
 
             return Scaffold(
-                appBar: buildAppBar(context),
+                //appBar: buildAppBar(context),
                 body: SmartRefresher(
                   enablePullDown: true,
                   enablePullUp:  false,
@@ -68,7 +68,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: ListView(
                     physics: BouncingScrollPhysics(),
                     children: [
-                      SizedBox(height: 10),
+                      SizedBox(height: 70),
 
                       ProfileWidget(
 
@@ -78,9 +78,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             // );
                           }
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 34),
                       buildName(_user),
-                      SizedBox(height: 30),
+                      SizedBox(height: 50),
 
                       NumbersWidget(co2: _user.co2saved!, km: _user.km!, trips: _user.viatges!,),
                     ],
