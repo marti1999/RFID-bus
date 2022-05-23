@@ -31,11 +31,11 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               child: Stack(
                 children: [
                   buildImage(),
-                  Positioned(
-                    bottom: 0,
-                    right: 4,
-                    child: buildEditIcon(color),
-                  ),
+                  // Positioned(
+                  //   bottom: 0,
+                  //   right: 4,
+                  //   child: buildEditIcon(color),
+                  // ),
                 ],
               ),
             );
