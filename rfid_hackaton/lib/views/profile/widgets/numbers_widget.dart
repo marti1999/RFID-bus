@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class NumbersWidget extends StatelessWidget {
   const NumbersWidget({Key? key, required this.co2, required this.km, required this.trips}) : super(key: key);
   final num km;
-  final double co2;
+  final num co2;
   final int trips;
 
   @override

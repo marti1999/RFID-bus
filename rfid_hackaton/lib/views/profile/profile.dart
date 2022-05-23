@@ -8,6 +8,8 @@ import 'package:rfid_hackaton/views/profile/widgets/numbers_widget.dart';
 import 'package:rfid_hackaton/views/profile/widgets/profile_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rfid_hackaton/services/database.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
+
 
 
 
@@ -22,6 +24,30 @@ String _userid = '';
 MyUser _user = MyUser(km: null);
 
 class _ProfilePageState extends State<ProfilePage> {
+
+  RefreshController _refreshController =
+  RefreshController(initialRefresh: false);
+
+  void _onRefresh() async{
+    // monitor network fetch
+    await Future.delayed(Duration(milliseconds: 1000));
+    //await _getCurrentUser();
+
+    if(mounted)
+    setState(() {});
+    // if failed,use refreshFailed()
+    _refreshController.refreshCompleted();
+  }
+
+  void _onLoading() async{
+    // monitor network fetch
+    //await Future.delayed(Duration(milliseconds: 1000));
+    // if failed,use loadFailed(),if no data return,use LoadNodata()
+    if(mounted)
+      setState(() {});
+    _refreshController.loadComplete();
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -32,25 +58,35 @@ class _ProfilePageState extends State<ProfilePage> {
 
             return Scaffold(
                 appBar: buildAppBar(context),
-                body: ListView(
-                  physics: BouncingScrollPhysics(),
-                  children: [
-                    SizedBox(height: 10),
+                body: SmartRefresher(
+                  enablePullDown: true,
+                  enablePullUp:  false,
+                  header: WaterDropHeader(),
+                  controller: _refreshController,
+                  onRefresh: _onRefresh,
+                  onLoading: _onLoading,
+                  child: ListView(
+                    physics: BouncingScrollPhysics(),
+                    children: [
+                      SizedBox(height: 10),
 
-                    ProfileWidget(
+                      ProfileWidget(
 
-                        onClicked: () {
-                          // Navigator.of(context).push(
-                          //     MaterialPageRoute(builder: (context) => EditProfilePage())
-                          // );
-                        }
-                    ),
-                    const SizedBox(height: 24),
-                    buildName(_user),
-                    SizedBox(height: 30),
+                          onClicked: () {
+                            // Navigator.of(context).push(
+                            //     MaterialPageRoute(builder: (context) => EditProfilePage())
+                            // );
+                          }
+                      ),
+                      const SizedBox(height: 24),
+                      buildName(_user),
+                      SizedBox(height: 30),
 
-                    NumbersWidget(co2: _user.co2saved!, km: _user.km!, trips: _user.viatges!,),
-                  ],
+                      NumbersWidget(co2: _user.co2saved!, km: _user.km!, trips: _user.viatges!,),
+                    ],
+
+                )
+
                 )
             );// your widget
         } else return CircularProgressIndicator();

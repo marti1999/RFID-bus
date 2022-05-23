@@ -3,7 +3,7 @@ class MyUser {
   final String? name;
   final String? email;
   final String? city;
-  final double? co2saved;
+  final num? co2saved;
   final num? km;
   final String? sex;
   final bool? isDarkMode;
