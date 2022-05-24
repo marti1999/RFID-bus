@@ -29,7 +29,6 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
           if (snapshot.hasData) {
 
-
             return Scaffold(
                 appBar: buildAppBar(context),
                 body: ListView(

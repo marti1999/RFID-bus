@@ -4,8 +4,13 @@ import 'package:rfid_hackaton/services/auth.dart';
 import 'package:rfid_hackaton/views/feedback/feedback_form.dart';
 import 'package:rfid_hackaton/views/map_view.dart';
 import 'package:rfid_hackaton/views/profile/test.dart';
+import 'package:rfid_hackaton/models/my_user.dart';
+import 'package:rfid_hackaton/views/profile/utils/user_preferences.dart';
 import 'package:rfid_hackaton/views/profile_view.dart';
 import 'package:rfid_hackaton/services/database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rfid_hackaton/views/profile/widgets/profile_widget.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../company/realtime_dashboard.dart';
 import '../profile/profile.dart';
@@ -18,11 +23,16 @@ class Home extends StatefulWidget {
   @override
   State<Home> createState() => _MyHomePageState();
 }
+String _userid = '';
+String imageUrl = '';
+MyUser _user = MyUser(km: null);
+late Image profilePic;
 
 class _MyHomePageState extends State<Home> {
   int _counter = 0;
   List<Widget> bodyWidgets = [MapView(title: 'New Route'), feedbackForm(), ProfilePage(), RealtimeDashboard(title: 'Realtime Dashboard'), HomePage()];
   int body_widget_index = 0;
+
 
   final AuthService _auth = AuthService();
 
@@ -31,29 +41,39 @@ class _MyHomePageState extends State<Home> {
       _counter++;
     });
   }
-
   @override
   Widget build(BuildContext context) {
-
-    return Scaffold(
-
-      appBar: AppBar(
-
-        title: Text(widget.title),
-      ),
-      body: bodyWidgets[body_widget_index],
-      drawer: buildDrawer(context),
+    return FutureBuilder(
+        future: _getCurrentUser(),
+        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+          if (snapshot.hasData) {
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(widget.title),
+              ),
+              body: bodyWidgets[body_widget_index],
+              drawer: buildDrawer(context),
+            );
+          }else return CircularProgressIndicator();
+        }
     );
+
   }
 
+  @override
   Widget buildDrawer(BuildContext context) {
     return Drawer(
         child: ListView(
           children: <Widget>[
-            const UserAccountsDrawerHeader(
-              accountName: Text("Prueba Prueba"),
-              accountEmail: Text("email@prueba.es"),
-              currentAccountPicture: CircleAvatar(backgroundColor: Colors.white),
+
+            UserAccountsDrawerHeader(
+              accountName: Text(_user.name!),
+              accountEmail: Text(_user.email!),
+
+              currentAccountPicture: CircleAvatar(
+                  backgroundColor: Colors.transparent,
+                backgroundImage: profilePic.image,
+              ),
               decoration: BoxDecoration(
                 color: Colors.blue,
               ),
@@ -122,6 +142,33 @@ class _MyHomePageState extends State<Home> {
         )
     );
   }
+
+}
+Future<String> _getCurrentUser() async{
+  final prefs = await SharedPreferences.getInstance();
+  _userid = prefs.getString('uid') ?? '';
+  _user = await DatabaseService(userID: _userid).getUserByUID(_userid);
+  await getImageURL();
+  return _userid;
+}
+
+Future<String> getImageURL() async {
+  // final gsReference = FirebaseStorage.instance.refFromURL("gs://graphical-bus-348706.appspot.com/YfY0jrDouVVCfkMCl21aOSJvjpf2.jpg");
+  // imageUrl = await gsReference.getDownloadURL();
+  // final Image image = Image.network(await gsReference.getDownloadURL());
+  // return image;
+
+  final prefs = await SharedPreferences.getInstance();
+  _userid = prefs.getString('uid') ?? '';
+
+  final ref = FirebaseStorage.instance.ref().child(_userid + '.jpg');
+  String a = await ref.getDownloadURL();
+  imageUrl = a;
+
+  profilePic = Image.network(a.toString());
+
+  print('puta merda fluter');
+  return a;
 }
 
 // Future addUserTest(String id, String name, int age) async {

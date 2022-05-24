@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +8,6 @@ import 'package:rfid_hackaton/shared/loading.dart';
 import 'dart:io';
 
 // import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -278,12 +276,6 @@ class _RegisterState extends State<Register> {
     )));
   }
 
-  Future<File> saveFilePermanently(PlatformFile file) async {
-    final appStorage = await getApplicationDocumentsDirectory();
-    final newFile = File('${appStorage.path}/${file.name}');
-
-    return File(file.path!).copy(newFile.path);
-  }
 }
 Future<String> _uploadWithUser() async{
   final prefs = await SharedPreferences.getInstance();
