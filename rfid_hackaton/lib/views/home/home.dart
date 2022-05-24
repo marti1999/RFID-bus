@@ -153,24 +153,12 @@ Future<String> _getCurrentUser() async{
 }
 
 Future<String> getImageURL() async {
-  // final gsReference = FirebaseStorage.instance.refFromURL("gs://graphical-bus-348706.appspot.com/YfY0jrDouVVCfkMCl21aOSJvjpf2.jpg");
-  // imageUrl = await gsReference.getDownloadURL();
-  // final Image image = Image.network(await gsReference.getDownloadURL());
-  // return image;
-
-  final prefs = await SharedPreferences.getInstance();
-  _userid = prefs.getString('uid') ?? '';
-
   final ref = FirebaseStorage.instance.ref().child(_userid + '.jpg');
   String a = await ref.getDownloadURL();
   imageUrl = a;
 
-  profilePic = Image.network(a.toString());
+  profilePic = await Image.network(a.toString());
 
   print('puta merda fluter');
   return a;
 }
-
-// Future addUserTest(String id, String name, int age) async {
-//   await DatabaseService(userID: id).updateUserData(name);
-// }
