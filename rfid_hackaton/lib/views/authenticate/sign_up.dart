@@ -230,7 +230,7 @@ class _RegisterState extends State<Register> {
                           ),
                           ElevatedButton.icon(
                               icon: Icon(Icons.image_outlined),
-                              label: Text("Pick Gallery"),
+                              label: Text("Profile picture"),
                               onPressed: () => _pickImage()),
                           SizedBox(
                             height: 20.0,
