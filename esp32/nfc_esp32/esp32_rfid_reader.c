@@ -1,3 +1,18 @@
+/*H**********************************************************************
+* FILENAME :        esp32_rfid_reader.c             
+*
+* DESCRIPTION :
+*       ESP32 controller code for reading RFID cards in a public transport environment.
+*       The main use of this code is registering the users trips.
+*
+* NOTES :
+*       This code has been made for "Sis. Multimèdia" 2021-22 class of
+*       Universitat Autonoma of Barcelona (UAB).
+*
+* AUTHOR :    Marc Garrofé        START DATE :    April 2022
+*
+*H*/
+
 #include <SPI.h>
 #include <MFRC522.h>
 #include <WiFi.h>
@@ -17,18 +32,22 @@
 #define BUS_ID 1
 #define LINE_ID 1
 
+// Definim el numero de parada on es troba el lector 
 #define PARADA_BAIXADA "3"
+
+// Definim variables per accedir a la xarxa wifi
+#define SSID_NAME ""
+#define PASSWORD ""
 
 // Declaració modul RFID
 MFRC522 rfid(SS_PIN, RST_PIN);
-
-char jsonOutput[128];
 
 // Variables per obtenir l'hora
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
 const int   daylightOffset_sec = 3600;
 
+// Inicialitzem una var global que defineix l'estat inicial del lector
 bool LECTOR_BUS = true;
 
 void led_green_1s() {
@@ -56,8 +75,8 @@ void initWiFi() {
    * Inicialitza el modul de xarxa Wifi
    * Durant el procés, activa el led vermell i al finalitzar activa el led verd per confirmar la connexió.
    */
-  const char* ssid = "";
-  const char* password = "";
+  const char* ssid = SSID_NAME;
+  const char* password = PASSWORD;
  
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -96,8 +115,7 @@ void led_green_fast() {
 
 bool check_uid(char *uid) {
   /**
-   * Comproba si l'identificador de NFC es troba dins de la BD.
-   * 
+   * Comproba si l'identificador de NFC es troba dins de la BD i actualitza les dades
    * 
    * @param : Identificador de la targeta o dispositiu NFC.
    * @return : Boleà indicant si la validació i actualització són correctes.
@@ -192,6 +210,10 @@ bool check_uid(char *uid) {
 
 
 void printLocalTime(){
+  /**
+   * Mostra per terminal l'hora actual de la controladora. 
+   * L'hora s'obte d'un servidor públic.
+   */
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo)){
     Serial.println("Failed to obtain time");
