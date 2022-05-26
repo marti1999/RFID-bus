@@ -164,9 +164,10 @@ Future<String> _getCurrentUser() async{
   final prefs = await SharedPreferences.getInstance();
   _userid = prefs.getString('uid') ?? '';
   print('USER ID: ' + _userid.toString());
-  if (_userid.isEmpty) {
+
+  /*if (_userid.isEmpty) {
     return '';
-  }
+  }*/
 
   _user = await DatabaseService(userID: _userid).getUserByUID(_userid);
 

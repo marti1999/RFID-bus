@@ -23,7 +23,7 @@ class Register extends StatefulWidget {
   _RegisterState createState() => _RegisterState();
 }
 
-String _userid = '';
+
 
 class _RegisterState extends State<Register> {
   FirebaseStorage storage = FirebaseStorage.instance;
@@ -251,15 +251,29 @@ class _RegisterState extends State<Register> {
                                           imagePath,
                                           sex,
                                           city);
+
                                   if (result == null) {
                                     setState(() {
                                       error =
-                                          'could not sign in with credentials';
+                                          'Could not sign up user with email';
                                       loading = false;
                                     });
                                   } else{
-                                    await _uploadWithUser();
-                                    _upload(_userid);
+                                    _getUserUID().then(
+                                      (value) {
+                                        if (value != '') {
+                                          print("Uploading picture: "+  value.toString());
+                                          _upload(value);
+                                        } else {
+                                          setState(() {
+                                            error =
+                                                'Error uploading picture';
+                                            loading = false;
+                                          });
+                                        }
+                                },
+                                    );
+
                                   }
                                 }
                               }),
@@ -277,8 +291,7 @@ class _RegisterState extends State<Register> {
   }
 
 }
-Future<String> _uploadWithUser() async{
+Future<String> _getUserUID() async{
   final prefs = await SharedPreferences.getInstance();
-  _userid = prefs.getString('uid') ?? '';
-  return _userid;
+  return prefs.getString('uid') ?? '';
 }

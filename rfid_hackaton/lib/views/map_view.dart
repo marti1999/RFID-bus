@@ -526,6 +526,7 @@ class _MapViewState extends State<MapView> {
                 const SizedBox(height: 10,),
               if (_location != "")
                 DropdownButtonFormField(
+                    isExpanded: true,
                     focusNode: textFirstFocusNode,
                     decoration: buildInputDecoration(),
                     value: _location,
@@ -556,6 +557,7 @@ class _MapViewState extends State<MapView> {
                 const SizedBox(height: 10,),
               if (_destination != "")
                 DropdownButtonFormField(
+                    isExpanded: true,
                     focusNode: textSecondFocusNode,
                     decoration: buildInputDecoration(),
                     value: _destination,
