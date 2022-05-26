@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rfid_hackaton/models/bus_stop.dart';
+import 'package:rfid_hackaton/models/my_user.dart';
+import 'package:rfid_hackaton/views/favorites_dialog.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import '../models/bus_real_data.dart';
@@ -12,12 +14,14 @@ import '../services/map_service.dart';
 import '../services/realtime_database.dart';
 
 class BusView extends StatefulWidget {
-  const BusView({Key? key, required this.title, required this.isClient, this.polylines,  this.markers, this.origin, this.destination, this.linesToUse, this.busStops}) : super(key: key);
+  const BusView({Key? key, required this.title, required this.isClient, this.polylines,  this.markers, this.origin, this.destination, this.linesToUse, this.busStops, this.user}) : super(key: key);
 
   final String title;
 
   final BusStop? origin;
   final BusStop? destination;
+
+  final MyUser? user;
 
   final List<String>? linesToUse;
   final Map<PolylineId, Polyline>? polylines;
@@ -231,6 +235,17 @@ class _BusViewState extends State<BusView> {
       topRight: Radius.circular(circularRadius),
     );
 
+    Widget fab = FloatingActionButton(
+      onPressed: () {
+        MapService().updateMapLocation(() { setState(() {}); }, context, null, _controller, markers);
+      },
+      child: const Icon(Icons.my_location),
+    );
+
+    if (widget.isClient && widget.user != null){
+        fab = FavoritesDialog(user: widget.user!, origin: widget.origin!, destination: widget.destination!,);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -256,12 +271,7 @@ class _BusViewState extends State<BusView> {
           minHeight: MediaQuery.of(context).size.height * 0.15,
           maxHeight: MediaQuery.of(context).size.height * 0.25,
         ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          MapService().updateMapLocation(() { setState(() {}); }, context, null, _controller, markers);
-        },
-        child: const Icon(Icons.my_location),
-      ),
+      floatingActionButton: fab,
     );
 
   }

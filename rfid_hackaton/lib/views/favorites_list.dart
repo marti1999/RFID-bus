@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:rfid_hackaton/models/favorite_route.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
-import '../services/gps_service.dart';
-
 class FavoritesList extends StatefulWidget {
-  const FavoritesList({Key? key, required this.title, required this.body}) : super(key: key);
+  const FavoritesList({Key? key, required this.title, required this.body, this.FavoritesStops, required this.onFavoriteStopSelected}) : super(key: key);
 
+  final List<FavoriteRoute>? FavoritesStops;
   final String title;
   final Widget body;
+  final ValueChanged<FavoriteRoute> onFavoriteStopSelected;
 
   @override
   State<FavoritesList> createState() => _FavoritesListState();
@@ -25,18 +26,11 @@ class _FavoritesListState extends State<FavoritesList> {
       bottomRight: Radius.circular(circularRadius),
     );
 
+    List<Widget> children;
 
-    return DefaultTextStyle(
-      style: Theme.of(context).textTheme.headline2!,
-      textAlign: TextAlign.center,
-      child: FutureBuilder<Position>(
-        future: GpsService().determinePosition(), // a previously-obtained Future<String> or null
-        builder: (BuildContext context, AsyncSnapshot<Position> snapshot) {
-          List<Widget> children;
-          if (snapshot.hasData) {
-            children = <Widget>[];
+    children = <Widget>[];
 
-            children.add(
+    children.add(
                 SlidingUpPanel(
                   renderPanelSheet: false,
                   collapsed: buildCollapsed(radius, isExpanded: false),
@@ -47,41 +41,14 @@ class _FavoritesListState extends State<FavoritesList> {
                   maxHeight: MediaQuery.of(context).size.height * 0.35,
                   slideDirection: SlideDirection.DOWN,
                 )
-            );
+    );
 
-          } else if (snapshot.hasError) {
-            children = <Widget>[
-              const Icon(
-                Icons.error_outline,
-                color: Colors.red,
-                size: 60,
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Text('Error: ${snapshot.error}'),
-              )
-            ];
-          } else {
-            children = const <Widget>[
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(),
-              ),
-              Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Text('Awaiting result...'),
-              )
-            ];
-          }
-          return Scaffold(
-            body: Center(
-              child: Stack(
-                children: children,
-              ),
-            ),
-          );
-        },
+
+    return Scaffold(
+      body: Center(
+        child: Stack(
+          children: children,
+        ),
       ),
     );
   }
@@ -103,25 +70,34 @@ class _FavoritesListState extends State<FavoritesList> {
       ),
       padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
       margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          ListTile(
-            leading: Icon(Icons.favorite, color: Theme.of(context).colorScheme.primary,),
-            title: Text('Santpedor - Manresa'),
-            onTap: () {
-              _pc.close();
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.favorite, color: Theme.of(context).colorScheme.primary,),
-            title: Text('RENFE-RECTORAT PER CIÈNCIES - EUREKA - CIÈNCIES I BIOCIÈNCIES'),
-            onTap: () {
-              _pc.close();
-            },
-          ),
-          ]
-      ),
+      child: buildListView(),
+    );
+  }
+
+  Widget buildListView(){
+    if (widget.FavoritesStops == null || widget.FavoritesStops!.isEmpty) {
+      return const Center(
+        child: Text('No favorites yet'),
+      );
+    }
+    return ListView.builder(
+      // Let the ListView know how many items it needs to build.
+      itemCount: widget.FavoritesStops!.length,
+      // Provide a builder function. This is where the magic happens.
+      // Convert each item into a widget based on the type of item it is.
+      itemBuilder: (context, index) {
+        final FavoriteRoute item = widget.FavoritesStops![index];
+
+        return ListTile(
+          leading: Icon(Icons.favorite, color: Theme.of(context).colorScheme.primary,),
+          title: Text(item.name!),
+          subtitle: Text(item.originBusStop!.stopName + " - " + item.destinationBusStop!.stopName),
+          onTap: () {
+            _pc.close();
+            widget.onFavoriteStopSelected(item);
+          },
+        );
+      },
     );
   }
 
@@ -159,4 +135,19 @@ class _FavoritesListState extends State<FavoritesList> {
     );
   }
 
+
+ /* ListTile(
+  leading: Icon(Icons.favorite, color: Theme.of(context).colorScheme.primary,),
+  title: Text('Santpedor - Manresa'),
+  onTap: () {
+  _pc.close();
+  },
+  ),
+  ListTile(
+  leading: Icon(Icons.favorite, color: Theme.of(context).colorScheme.primary,),
+  title: Text('RENFE-RECTORAT PER CIÈNCIES - EUREKA - CIÈNCIES I BIOCIÈNCIES'),
+  onTap: () {
+  _pc.close();
+  },
+  ),*/
 }

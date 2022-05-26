@@ -1,3 +1,5 @@
+import 'package:rfid_hackaton/models/favorite_route.dart';
+
 class MyUser {
   final String? uid;
   final String? name;
@@ -9,6 +11,7 @@ class MyUser {
   final bool? isDarkMode;
   final String? imagePath;
   final int? viatges;
+  final List<FavoriteRoute>? favourites;
 
   MyUser({this.sex,
       this.name,
@@ -19,7 +22,9 @@ class MyUser {
       this.isDarkMode,
       this.uid,
       this.imagePath,
-      this.viatges});
+      this.viatges,
+      this.favourites
+  });
 
   MyUser.fromSnapshot(Map<String, dynamic> snapshot)
       : uid = snapshot['uid'],
@@ -31,5 +36,6 @@ class MyUser {
         isDarkMode = snapshot['isDarkMode'],
         sex = snapshot['sex'],
         imagePath = snapshot['imagePath'],
-        viatges = snapshot['viatges'];
+        viatges = snapshot['viatges'],
+        favourites = (snapshot['favourites'] as List<dynamic>).cast<FavoriteRoute>();
 }

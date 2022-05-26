@@ -54,7 +54,23 @@ class _MyHomePageState extends State<Home> {
               body: bodyWidgets[body_widget_index],
               drawer: buildDrawer(context),
             );
-          }else return CircularProgressIndicator();
+          }else {
+            return Center(
+              child: Column(
+                  children: const [
+                    CircularProgressIndicator(),
+                    Text('Loading profile ...', style:
+                    TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),),
+                  ],
+                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+              )
+            );
+          }
         }
     );
 
@@ -147,13 +163,24 @@ class _MyHomePageState extends State<Home> {
 Future<String> _getCurrentUser() async{
   final prefs = await SharedPreferences.getInstance();
   _userid = prefs.getString('uid') ?? '';
+  print('USER ID: ' + _userid.toString());
+  if (_userid.isEmpty) {
+    return '';
+  }
+
   _user = await DatabaseService(userID: _userid).getUserByUID(_userid);
-  await getImageURL();
+
+  if (_user != null){
+    await getImageURL();
+  }else{
+    profilePic = await Image.network('https://www.kindpng.com/picc/m/24-248253_user-profile-default-image-png-clipart-png-download.png');
+  }
+
   return _userid;
 }
 
 Future<String> getImageURL() async {
-  final ref = FirebaseStorage.instance.ref().child(_userid + '.jpg');
+  final ref = await FirebaseStorage.instance.ref().child(_userid + '.jpg');
   String a = await ref.getDownloadURL();
   imageUrl = a;
 
