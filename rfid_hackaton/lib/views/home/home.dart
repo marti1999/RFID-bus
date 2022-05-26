@@ -153,7 +153,7 @@ Future<String> _getCurrentUser() async{
 }
 
 Future<String> getImageURL() async {
-  final ref = FirebaseStorage.instance.ref().child(_userid + '.jpg');
+  final ref = await FirebaseStorage.instance.ref().child(_userid + '.jpg');
   String a = await ref.getDownloadURL();
   imageUrl = a;
 
