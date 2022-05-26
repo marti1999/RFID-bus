@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rfid_hackaton/models/bus_stop.dart';
 import 'package:rfid_hackaton/models/my_user.dart';
-import 'package:rfid_hackaton/views/favorites_dialog.dart';
+import 'package:rfid_hackaton/views/favourites/favorites_dialog.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import '../models/bus_real_data.dart';
@@ -14,7 +14,7 @@ import '../services/map_service.dart';
 import '../services/realtime_database.dart';
 
 class BusView extends StatefulWidget {
-  const BusView({Key? key, required this.title, required this.isClient, this.polylines,  this.markers, this.origin, this.destination, this.linesToUse, this.busStops, this.user}) : super(key: key);
+  const BusView({Key? key, required this.title, required this.isClient, this.isFavorite, this.polylines,  this.markers, this.origin, this.destination, this.linesToUse, this.busStops, this.user}) : super(key: key);
 
   final String title;
 
@@ -28,6 +28,7 @@ class BusView extends StatefulWidget {
   final Map<MarkerId, Marker>? markers;
 
   final bool isClient;
+  final bool? isFavorite;
 
   final Map<String, BusStop>? busStops;
 
@@ -55,6 +56,8 @@ class _BusViewState extends State<BusView> {
   bool busesSpawned = false;
   bool  _isMapCreated = false;
   bool _followBus = false;
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   /// It hides the panel for some seconds so the user can see the map
   /// and then it shows the panel again
@@ -242,11 +245,13 @@ class _BusViewState extends State<BusView> {
       child: const Icon(Icons.my_location),
     );
 
-    if (widget.isClient && widget.user != null){
-        fab = FavoritesDialog(user: widget.user!, origin: widget.origin!, destination: widget.destination!,);
+    if (widget.isClient && widget.user != null && widget.isFavorite! == false) {
+        fab = FavoritesDialog(user: widget.user!, origin: widget.origin!, destination: widget.destination!, scaffoldKey: _scaffoldKey);
     }
 
+
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: Text(widget.title),
         centerTitle: true,

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,7 +16,7 @@ class DatabaseService {
 
   Future updateUserData(String email, String name, String imagePath, String sex, String city) async {
     return await userCol.doc(userID).set({
-      'email':email,
+      'email': email,
       'name': name,
       'co2saved': 0.0,
       'km': 0.0,
@@ -32,27 +34,35 @@ class DatabaseService {
 
     MyUser user = await getUserByUID(userID);
 
-    if (user.favourites!.isEmpty){
-      user.favourites!.add(route);
+    List<FavoriteRoute> favs = user.favourites!;
+
+    if (favs.isEmpty){
+      favs.add(route);
     }
     else{
       bool exists = false;
-      for (var fav in user.favourites!){
-        if (fav.originBusStop == route.originBusStop && fav.destinationBusStop == route.destinationBusStop){
+      for (var fav in favs){
+        if (fav.originBusStop!.stopId == route.originBusStop!.stopId && fav.destinationBusStop!.stopId == route.destinationBusStop!.stopId){
           exists = true;
         }
       }
+
       if (!exists){
-        user.favourites!.add(route);
+        favs.add(route);
       }
     }
 
-    List<FavoriteRoute> favs = user.favourites!;
+    List<String> favsStr = [];
+    for (var fav in favs){
+      var jsonString = jsonEncode(fav.toJson());
 
-    favs.add(route);
+      favsStr.add(jsonString);
+    }
 
-    return await userCol.doc(userID).set({
-      'favourites' : favs
+    print(favsStr);
+
+    return userCol.doc(userID).update({
+      'favourites' : favsStr
     });
   }
 
@@ -60,11 +70,11 @@ class DatabaseService {
   Future<MyUser> getUserByUID(String uid) async {
     DocumentSnapshot snapshot =  await userCol.doc(uid).get();
     if(snapshot.exists) {
-      MyUser user = MyUser.fromSnapshot(snapshot.data() as Map<String, dynamic>);
+      MyUser user = MyUser.fromSnapshot(snapshot.data() as Map<String, dynamic>, uid:uid);
+
       return user;
     }
     throw("ERROR GET USER BY UID - database.dart");
-
   }
 
 

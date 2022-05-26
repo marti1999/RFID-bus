@@ -6,19 +6,21 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:provider/provider.dart';
+
 import 'package:rfid_hackaton/models/bus_stop.dart';
 import 'package:rfid_hackaton/models/favorite_route.dart';
 import 'package:rfid_hackaton/models/my_user.dart';
+import 'package:rfid_hackaton/services/database.dart';
 import 'package:rfid_hackaton/services/gps_service.dart';
 import 'package:rfid_hackaton/services/realtime_database.dart';
+import 'package:rfid_hackaton/views/favourites/favorites_list.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import '../models/bus_real_data.dart';
 import '../services/database_bus_service.dart';
 import '../services/map_service.dart';
 import 'bus_view.dart';
-import 'favorites_list.dart';
 
 class MapView extends StatefulWidget {
   const MapView({Key? key, required this.title}) : super(key: key);
@@ -53,8 +55,11 @@ class _MapViewState extends State<MapView> {
   BusStop? originBusStop = null;
   BusStop? destinationBusStop = null;
 
+  List<FavoriteRoute> favoriteRoutes = [];
+
   final List<BusStop> _busStops = [];
   final List<BusRtData> _busLines = [];
+
 
   List<DropdownMenuItem<String>> get dropdownItems{
     if (_busStops.isEmpty) {
@@ -78,6 +83,10 @@ class _MapViewState extends State<MapView> {
     return items;
   }
 
+  /// Calculates possible routes the user can use betweeen the two selected bus stops
+  /// and adds them to the list of possible routes
+  /// Also creates the polylines for the routes
+  /// it does not calculates transfers.
   bool getPossibleRoutes()  {
     if (originBusStop == null || destinationBusStop == null) {
       return false;
@@ -128,7 +137,8 @@ class _MapViewState extends State<MapView> {
   }
 
   /// It hides the panel for some seconds so the user can see the map
-  /// and then it As the panel again
+  /// and then it As the panel again to be able to see the map again
+  /// TODO: if user leaves the screen and animation is playing app crashes
   Future<void> showMarkerAnimation(GoogleMapController controller, String query) async {
     _pc.close();
 
@@ -147,12 +157,14 @@ class _MapViewState extends State<MapView> {
     _pc.open();
   }
 
+
   // generates a marker for query and shows it with animation on the map
   void genMarkerAndZoom(GoogleMapController controller, String query, LatLng latLng, bool isDestination) {
-    // remove old markers if any
+    /*// remove old markers if any
     if (markers.length > 2) {
       markers.clear();
-    }
+      polylines.clear();
+    }*/
 
     // Info Window es el que es mostra quan cliques en un iconito d'aquestos del mapa
     InfoWindow infoWindow = InfoWindow(
@@ -212,11 +224,12 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-
-
   double circularRadius = 10;
 
+  // Calculates the nearest and farthest bus stops from the user location and the destination
   String setNearestBusStop()  {
+    updateUser();
+
     if (_busStops.isNotEmpty) {
       String locationName  =  GpsService().getNearestBusStop(_currentPosition.latitude, _currentPosition.longitude, _busStops);
       String possibleDestinationName  =  GpsService().getFurtherBusStop(_currentPosition.latitude, _currentPosition.longitude, _busStops);
@@ -270,8 +283,13 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+  // This function gets the user uid from the app local storage
+  Future<String> _getUserUID() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('uid') ?? '';
+  }
 
-
+  // This is called at first time when the app is started
   @override
   void initState() {
     super.initState();
@@ -308,29 +326,81 @@ class _MapViewState extends State<MapView> {
       fillBusLines(buses),
     );
 
+
     // aixo es perque es cridi quan sha pintat la pantalla  i per tant ja tenim la posicio
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 3), () => setNearestBusStop());
     });
-
   }
 
-  void onFavoriteStopSelected(FavoriteStop){
+  // Updates the user data we have , so the favorites as well.
+  void updateUser(){
+    _getUserUID().then((value) =>  setCurrentUser(value));
+  }
+
+  // Given the saved user UID it creates a new user object to use inside here
+  Future setCurrentUser(String userUID) async {
+    print('USER MAP SERVICE: ' + userUID);
+
+    MyUser _user = await DatabaseService(userID: userUID).getUserByUID(userUID);
+
     setState(() {
-      _location = FavoriteStop.stopName;
-      _locationLatLng = LatLng(FavoriteStop.latitude, FavoriteStop.longitude);
+      currentUser = MyUser(km: null, uid: userUID);
+
+      print('USER GOT FROM FIREBASE : ' + userUID);
+
+      currentUser = _user;
+      favoriteRoutes = currentUser.favourites!;
+
+      print('USER GOT FROM DATABASE : ' + currentUser.uid!);
     });
+
+    print('USER MAP SERVICE : ' + currentUser.favourites.toString());
   }
 
+  // Callback function for when a user selects a favorite route on the list
+  void onFavoriteStopSelected(favRoute)
+  {
+    String locationName  =  favRoute.originBusStop.stopName;
+    String possibleDestinationName  =  favRoute.destinationBusStop.stopName;
+
+    setState (() {
+      originBusStop = null;
+      destinationBusStop = null;
+    });
+
+    bool savedLocation = saveLocation(locationName, false);
+    bool savedDestination = saveLocation(possibleDestinationName, true);
+
+    if (savedLocation && savedDestination) {
+      String favRouteName = favRoute.name;
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Loading $locationName and $possibleDestinationName from $favRouteName'),
+        duration: const Duration(milliseconds: 1500),
+      ));
+    }
+    else{
+      String favRouteName = favRoute.name;
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('$favRouteName  could not be loaded'),
+        duration: const Duration(milliseconds: 1500),
+      ));
+    }
+
+    setState (() {
+      originBusStop = favRoute.originBusStop;
+      destinationBusStop = favRoute.destinationBusStop;
+    });
+
+    print('FAVORITE STOP SELECTED');
+    _goToNextScreen(isFavorite: true);
+  }
 
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<MyUser?>(context);
-    print(user);
-
-    currentUser = user!;
-
     BorderRadiusGeometry radius = BorderRadius.only(
       topLeft: Radius.circular(circularRadius),
       topRight: Radius.circular(circularRadius),
@@ -348,13 +418,15 @@ class _MapViewState extends State<MapView> {
 
             _currentPosition = LatLng(snapshot.data!.latitude, snapshot.data!.longitude);
 
+            print('BUILD: ' + currentUser.favourites.toString() );
+
             Widget favourites = FavoritesList(
               title: 'Your all time favourites',
               body: buildGoogleMaps(context, _currentPosition),
               onFavoriteStopSelected: (FavoriteRoute locationName) {
                 onFavoriteStopSelected(locationName);
               },
-              FavoritesStops: user.favourites,
+              FavoritesStops: currentUser.favourites,
             );
 
             children.add(
@@ -411,7 +483,7 @@ class _MapViewState extends State<MapView> {
     );
   }
 
-  /// Builds the google maps widget
+  /// Builds the google maps widget with the current position
   Widget buildGoogleMaps(BuildContext context, LatLng location) {
     LatLng _currentPosition = const LatLng(0, 0);
 
@@ -592,7 +664,9 @@ class _MapViewState extends State<MapView> {
   }
 
   /* Draws the bus line on the map and goes to the real time buses screen */
-  void _goToNextScreen(){
+  void _goToNextScreen({bool isFavorite = false}){
+
+    print("_goToNextScreen: " + isFavorite.toString());
 
     bool routeFound = getPossibleRoutes();
 
@@ -605,23 +679,39 @@ class _MapViewState extends State<MapView> {
 
       // wait for the map to finish rendering
       Future.delayed(const Duration(milliseconds: 500), () {
-        Navigator.push(context, MaterialPageRoute(builder: (
-            context) =>
-            BusView(title: 'Bus Routes',
-              isClient : true,
-              origin: originBusStop,
-              destination: destinationBusStop,
-              polylines: polylines,
-              linesToUse: linesToUse,
-              markers: markers,
-              user: currentUser,
-              busStops: null,),)
-        );
+        _goToPage2(isFavorite);
       });
     }
 
   }
 
+  /// go to the real time buses screen with the selected route
+  /// @param isFavorite if the route is a favorite route
+  Future<void> _goToPage2(bool isFavorite) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (
+        context) =>
+        BusView(title: 'Bus Routes',
+          isClient : true,
+          origin: originBusStop,
+          destination: destinationBusStop,
+          polylines: polylines,
+          linesToUse: linesToUse,
+          markers: markers,
+          user: currentUser,
+          isFavorite: isFavorite,
+          busStops: null,),)
+    );
+
+    print("Page2 is popped");
+
+    markers.clear();
+    polylines.clear();
+    updateUser();
+  }
+
+  /// Saves the location and returns true if the location is saved
+  /// Returns false if the location is not saved
+  /// If the location is saved, animation is triggered
 
   bool saveLocation(String location, bool isDestination)  {
     if (location.isNotEmpty) {

@@ -13,6 +13,8 @@ class MyUser {
   final int? viatges;
   final List<FavoriteRoute>? favourites;
 
+
+
   MyUser({this.sex,
       this.name,
       this.email,
@@ -26,8 +28,8 @@ class MyUser {
       this.favourites
   });
 
-  MyUser.fromSnapshot(Map<String, dynamic> snapshot)
-      : uid = snapshot['uid'],
+  MyUser.fromSnapshot(Map<String, dynamic> snapshot,  { String uid : '' })
+      : uid = snapshot['uid'] ?? uid,
         name = snapshot['name'],
         email = snapshot['email'],
         city = snapshot['city'],
@@ -37,5 +39,7 @@ class MyUser {
         sex = snapshot['sex'],
         imagePath = snapshot['imagePath'],
         viatges = snapshot['viatges'],
-        favourites = (snapshot['favourites'] as List<dynamic>).cast<FavoriteRoute>();
+        favourites = FavoriteRoute().fromJson(snapshot['favourites']);
 }
+
+

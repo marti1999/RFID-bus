@@ -68,7 +68,7 @@ class _FavoritesListState extends State<FavoritesList> {
             ),
           ]
       ),
-      padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
+      padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 24.0),
       margin: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 24.0),
       child: buildListView(),
     );
@@ -80,6 +80,7 @@ class _FavoritesListState extends State<FavoritesList> {
         child: Text('No favorites yet'),
       );
     }
+
     return ListView.builder(
       // Let the ListView know how many items it needs to build.
       itemCount: widget.FavoritesStops!.length,

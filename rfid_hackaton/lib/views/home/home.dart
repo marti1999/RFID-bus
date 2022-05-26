@@ -81,7 +81,7 @@ class _MyHomePageState extends State<Home> {
     return Drawer(
         child: ListView(
           children: <Widget>[
-
+            if (_user.name != null && _user.name != '')
             UserAccountsDrawerHeader(
               accountName: Text(_user.name!),
               accountEmail: Text(_user.email!),
@@ -165,9 +165,10 @@ Future<String> _getCurrentUser() async{
   _userid = prefs.getString('uid') ?? '';
   print('USER ID: ' + _userid.toString());
 
-  /*if (_userid.isEmpty) {
-    return '';
-  }*/
+  // wait until _userid is not empty
+  while(_userid == ''){
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
 
   _user = await DatabaseService(userID: _userid).getUserByUID(_userid);
 
