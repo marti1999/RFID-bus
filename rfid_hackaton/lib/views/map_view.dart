@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:rfid_hackaton/models/bus_stop.dart';
+import 'package:rfid_hackaton/models/favorite_route.dart';
+import 'package:rfid_hackaton/models/my_user.dart';
 import 'package:rfid_hackaton/services/gps_service.dart';
 import 'package:rfid_hackaton/services/realtime_database.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
@@ -27,6 +30,7 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
+  MyUser currentUser = MyUser(km: null);
 
   final DatabaseBusService dbService = DatabaseBusService();
 
@@ -305,16 +309,28 @@ class _MapViewState extends State<MapView> {
     );
 
     // aixo es perque es cridi quan sha pintat la pantalla  i per tant ja tenim la posicio
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 3), () => setNearestBusStop());
     });
 
+  }
+
+  void onFavoriteStopSelected(FavoriteStop){
+    setState(() {
+      _location = FavoriteStop.stopName;
+      _locationLatLng = LatLng(FavoriteStop.latitude, FavoriteStop.longitude);
+    });
   }
 
 
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<MyUser?>(context);
+    print(user);
+
+    currentUser = user!;
+
     BorderRadiusGeometry radius = BorderRadius.only(
       topLeft: Radius.circular(circularRadius),
       topRight: Radius.circular(circularRadius),
@@ -332,12 +348,21 @@ class _MapViewState extends State<MapView> {
 
             _currentPosition = LatLng(snapshot.data!.latitude, snapshot.data!.longitude);
 
+            Widget favourites = FavoritesList(
+              title: 'Your all time favourites',
+              body: buildGoogleMaps(context, _currentPosition),
+              onFavoriteStopSelected: (FavoriteRoute locationName) {
+                onFavoriteStopSelected(locationName);
+              },
+              FavoritesStops: user.favourites,
+            );
+
             children.add(
                 SlidingUpPanel(
                   renderPanelSheet: false,
                   collapsed: buildCollapsed(radius, isExpanded: false),
                   panel: buildBottomSheet(radius),
-                  body: FavoritesList(title: 'Your all time favourites', body: buildGoogleMaps(context, _currentPosition)),
+                  body: favourites, // es un sliding panel dintre d'un altre
                   borderRadius:  radius,
                   controller: _pc,
                   maxHeight: MediaQuery.of(context).size.height * 0.55,
@@ -587,6 +612,7 @@ class _MapViewState extends State<MapView> {
               polylines: polylines,
               linesToUse: linesToUse,
               markers: markers,
+              user: currentUser,
               busStops: null,),)
         );
       });
