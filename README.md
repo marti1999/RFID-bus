@@ -24,10 +24,10 @@ Es preveu també obtenir i tractar les dades dels usuaris per tal de gestionar l
 Tenim el projecte separat en aquestes carpetes:
 
 - `rfid_hackaton` 
-  -  Projecte de flutter (el frontend) que es pot carregar i fer funcionar simplement clicant en el botó verd de Play.
+  -  Projecte de flutter (el frontend) que es pot carregar amb Android Studio i fer funcionar simplement clicant en el botó verd de Play.
 - `python`
   -  Scripts de python que fan la simulació de busos i actualitzen les estadistiques dels usuaris.
-  -  `python random_buses_feed.py` per començar la simulació de busos.
+  -  `python random_buses_feed.py` per començar la simulació de busos. (La primera vegada fa una crida a la web de la UAB per obtenir la informació dels busos, però a la segona vegada ja no perque descarrega la informació en l'ordinador.)
   -  `python update-db.py` quan es vulgui actualitzar les estadistiques de cada usuari. Aquest script va 1 per 1 per tots els usuaris existents.
 - `database`
   - Exportació del firebase
