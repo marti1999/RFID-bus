@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rfid_hackaton/models/favorite_route.dart';
 import 'package:rfid_hackaton/models/my_user.dart';
 import 'package:rfid_hackaton/views/profile/edit_profile_page.dart';
 import 'package:rfid_hackaton/views/profile/utils/user_preferences.dart';
@@ -81,6 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       SizedBox(height: 50),
 
                       NumbersWidget(co2: _user.co2saved!, km: _user.km!, trips: _user.viatges!,),
+                      const SizedBox(height: 10),
                     ],
 
                 )
@@ -92,6 +94,31 @@ class _ProfilePageState extends State<ProfilePage> {
 
   }
 }
+
+Widget buildFavoritesList(MyUser _user){
+  if (_user.favourites == null || _user.favourites!.isEmpty) {
+    return const Center(
+      child: Text('No favorites yet'),
+    );
+  }
+
+  return ListView.builder(
+    // Let the ListView know how many items it needs to build.
+    itemCount: _user.favourites!.length,
+    // Provide a builder function. This is where the magic happens.
+    // Convert each item into a widget based on the type of item it is.
+    itemBuilder: (context, index) {
+      final FavoriteRoute item = _user.favourites![index];
+
+      return ListTile(
+        leading: Icon(Icons.favorite, color: Theme.of(context).colorScheme.primary,),
+        title: Text(item.name!),
+        subtitle: Text(item.originBusStop!.stopName + " - " + item.destinationBusStop!.stopName),
+      );
+    },
+  );
+}
+
 Widget buildName(MyUser user) => Column(
   children: [
     Text(

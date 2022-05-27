@@ -79,7 +79,8 @@ class _FavoritesDialogState extends State<FavoritesDialog> {
                                 content: Text('$_RouteName  was added to favorites'),
                                 duration: const Duration(milliseconds: 1500),
                               ));
-
+                              
+                              MapService().showAlertDialog(context, '$_RouteName  was added to favorites');
                         }
                     );
                   }

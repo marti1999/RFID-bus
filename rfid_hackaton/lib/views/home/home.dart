@@ -55,20 +55,22 @@ class _MyHomePageState extends State<Home> {
               drawer: buildDrawer(context),
             );
           }else {
-            return Center(
+            return DefaultTextStyle(
+                style:  TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                child: Center(
               child: Column(
                   children: const [
                     CircularProgressIndicator(),
-                    Text('Loading profile ...', style:
-                    TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),),
+                    Text('Loading profile ...'),
                   ],
                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
               )
+            ),
             );
           }
         }
@@ -168,6 +170,10 @@ Future<String> _getCurrentUser() async{
   // wait until _userid is not empty
   while(_userid == ''){
     await Future.delayed(const Duration(milliseconds: 100));
+
+    final prefs = await SharedPreferences.getInstance();
+    _userid = prefs.getString('uid') ?? '';
+    print('USER ID: ' + _userid.toString());
   }
 
   _user = await DatabaseService(userID: _userid).getUserByUID(_userid);
